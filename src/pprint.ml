@@ -78,12 +78,12 @@ let string_of_binop o =
   | Or -> "or"
   | Minus -> "-"
   | Times -> "*"
-  | _ -> failwith "Unimplemented"
+  | _ -> failwith "Print"
 
 let string_of_unop o =
   match o with
   | Not -> "not"
-  | _ -> failwith "Unimplemented"
+  | _ -> failwith "Print"
 
 (* Pretty print type t *)
 let print_typ t =
@@ -108,7 +108,7 @@ let print_typ t =
 (* Pretty print expression e *)
 let print_exp e =
   let rec loop e =
-    failwith "unimplemented"
+    failwith "Print"
     (* match e with
     | True -> Format.printf "%s" "true"
     | False -> Format.printf "%s" "false"
@@ -129,4 +129,3 @@ let print_exp e =
   Format.printf "@[";
   loop e;
   Format.printf "@]"
-

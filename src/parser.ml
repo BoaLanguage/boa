@@ -494,7 +494,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'exp) in
     Obj.repr(
 # 78 "parser.mly"
-                                         ( Binary(Equal, _1, _3) )
+                                        ( Binary(Equal, _1, _3) )
 # 499 "parser.ml"
                : 'bexp))
 ; (fun __caml_parser_env ->
@@ -502,7 +502,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'exp) in
     Obj.repr(
 # 79 "parser.mly"
-                                       ( Binary(Times, _1, _3) )
+                                        ( Binary(Times, _1, _3) )
 # 507 "parser.ml"
                : 'bexp))
 ; (fun __caml_parser_env ->
@@ -518,7 +518,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'exp) in
     Obj.repr(
 # 81 "parser.mly"
-                                     ( Binary(Divide, _1, _3) )
+                                        ( Binary(Divide, _1, _3) )
 # 523 "parser.ml"
                : 'bexp))
 ; (fun __caml_parser_env ->
@@ -542,7 +542,7 @@ let yyact = [|
     let _3 = (Parsing.peek_val __caml_parser_env 0 : 'exp) in
     Obj.repr(
 # 84 "parser.mly"
-                                     ( Binary(IntDivide, _1, _3) )
+                                        ( Binary(IntDivide, _1, _3) )
 # 547 "parser.ml"
                : 'bexp))
 ; (fun __caml_parser_env ->

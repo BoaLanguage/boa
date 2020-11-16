@@ -10,7 +10,7 @@ let rec get_type mappings exp =
   | Var var -> (match List.assoc_opt var mappings with
       | None -> raise (IllTyped "Unbound variable")
       | Some e -> e)
-  | Call (e1, elist) -> failwith "Unimplemented"
+  | Call (e1, elist) -> failwith "Check"
   | Lam (v, t, exp) -> TFun (t, (get_type ((v, t)::mappings) exp))
   | Let (v, e1, e2) -> get_type ((v, (get_type mappings e1))::mappings) e2
   | Binary (binop, e1, e2) -> 
@@ -25,7 +25,7 @@ let rec get_type mappings exp =
      | Greater -> if t1 = t2 && t2 = TBase "Int" then TBase "Bool" else raise (IllTyped "Invalid binop")
      | And
      | Or -> if t1 = t2 && t2 = TBase "Bool" then TBase "Bool" else raise (IllTyped "Invalid binop")
-     | _ -> failwith "Unimplemented")
+     | _ -> failwith "Check")
   | Unary (unop, exp) -> (match get_type mappings exp with
       | TBase "Int" -> TBase "Int"
       | _ -> raise (IllTyped  "Invalid Operator"))
@@ -34,7 +34,7 @@ let rec get_type mappings exp =
       | hd::rest -> (match get_type mappings (Tuple rest) with
           | TTuple list -> TTuple ((get_type mappings hd)::list)
           | _ -> raise (IllTyped "Invalid tuple")))
-  | _ -> failwith "Unimplemented"
+  | _ -> failwith "Check"
 
 let rec check_exp (e:exp) : typ =
   get_type [] e

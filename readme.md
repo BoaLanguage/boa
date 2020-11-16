@@ -1,2 +1,2 @@
 # Boa
-## A statically typed, Python-inspired functional language
+- A statically typed, Python-inspired functional language

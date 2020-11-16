@@ -40,7 +40,7 @@ let rec lookup s x : value =
 (* Evaluate an expression using an environment for free variables. *)
 let rec eval' (e : exp) (s : store) : value =
   let v = match e with
-    | _ -> failwith "Unimplemented"
+    | _ -> failwith "Goobyer"
   in
   (* "Force" lazy values when they are the result of a computation. *)
   match v with
@@ -55,9 +55,13 @@ let rec expr_of_value v =
   | VBool b -> if b then Bool(true) else Bool(false)
   | VTuple vs -> Tuple (List.map expr_of_value vs)
   | VLazy (e, s) -> e
-  | _ -> failwith "Unimplemented"
+  | _ -> failwith "Gooby"
 
 (* Evaluate a closed expression to an expression. *)
 let eval (e : exp) : exp =
   let v = eval' e [] in
   expr_of_value v
+
+let eval (s : stmt) : store =
+  match s with
+  | Exp (e) -> 

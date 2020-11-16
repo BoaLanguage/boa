@@ -33,7 +33,7 @@ let () =
   let _ =
     Format.printf "@[";
     Format.printf "Expression:@\n  @[";
-    Pprint.print_exp e;
+    Format.printf "";
     Format.printf "@]@\n@\n" in
 
   (* (4) Typecheck the expression. *)
@@ -57,7 +57,7 @@ let () =
 
   let v = (match e with
   | Exp(exp) -> Eval.eval exp
-  | _ -> failwith "Unimplemented") in
+  | _ -> failwith "Main") in
 
   (* (6) Pretty-print the final value. *)
   let _ =
