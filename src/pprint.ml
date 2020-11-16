@@ -106,26 +106,3 @@ let print_typ t =
   loop t
 
 (* Pretty print expression e *)
-let print_exp e =
-  let rec loop e =
-    failwith "Print"
-    (* match e with
-    | True -> Format.printf "%s" "true"
-    | False -> Format.printf "%s" "false"
-    | Empty t -> print_empty loop print_typ t e
-    | Var x -> print_ident x
-    | App (l, r) -> print_binop loop "" l r
-    | Lam (x, t, e) -> print_lambda loop print_typ x t e
-    | Let (x, e1, e2) -> print_let loop x e1 e2
-    | Int i -> Format.printf "%i" i
-    | Binary (o, l, r) -> print_binop loop (string_of_binop o) l r
-    | Unary (o, e) -> print_unop loop (string_of_unop o) e
-    | Tuple es -> print_tuple loop es
-    | Proj (e, i) -> (loop e); Format.printf ".%i" i
-    | Fix e -> Format.printf "fix "; loop e
-    | If (e1, e2, e3) -> print_if loop e1 e2 e3
-    | Match (e1, e2, e3) -> print_match loop e1 e2 e3 *)
-  in
-  Format.printf "@[";
-  loop e;
-  Format.printf "@]"

@@ -50,10 +50,34 @@ let int_of_value (v : value) : int =
   | VInt i -> i
   | _ ->  failwith "BIG PROBLEM"
 
+let bool_of_value (v : value) : bool = 
+  match v with
+  | VBool b -> b
+  | _ -> failwith "BIG PROBLEM"
+
+let rec pow (a : int) (b : int) : int = 
+  if (b = 0) then 1 else 
+  if (b = 1) then a else pow (a * a) (b - 1)
+
 let evalb (b : binop) (l : value) (r : value) : value = 
   match b with
   | Plus -> VInt((int_of_value l) + (int_of_value r))
-  | _ -> failwith "yo"
+  | Less -> VBool((int_of_value l) < (int_of_value r))
+  | Greater -> VBool((int_of_value l) > (int_of_value r))
+  | And -> VBool((bool_of_value l) && (bool_of_value r))
+  | Or -> VBool((bool_of_value l) || (bool_of_value r))
+  | Equal -> VBool((int_of_value l) = (int_of_value r))
+  | Times -> VInt((int_of_value l) * (int_of_value r))
+  | Minus -> VInt((int_of_value l) - (int_of_value r))
+  | Divide -> VInt((int_of_value l) / (int_of_value r))
+  | Mod -> VInt((int_of_value l) mod (int_of_value r))
+  | Exponent -> VInt(pow (int_of_value l) (int_of_value r))
+  | IntDivide -> VInt((int_of_value l) / (int_of_value r))
+  | Leq -> VBool((int_of_value l) <= (int_of_value r))
+  | Geq -> VBool((int_of_value l) >= (int_of_value r))
+  | Is -> VBool((int_of_value l) = (int_of_value r))
+  | In -> failwith "unimplemented"
+  | Neq -> VBool((int_of_value l) <> (int_of_value r))
 
 (* Evaluate a closed expression to an expression. *)
 let rec evale (e : exp) (s : store) : value =
@@ -62,9 +86,22 @@ let rec evale (e : exp) (s : store) : value =
   | AttrAccess (e, v) -> failwith "not sure"
   | SliceAccess (e1, e2) -> failwith "idk"
   | Binary (bin, e1, e2) -> evalb bin (evale e1 s) (evale e2 s)
+  | Int i -> VInt(i)
   | _ -> failwith "not implemented expression"
+
+let print_value (v : value) =
+    match v with
+    | VInt i -> Format.printf "%d" i;
+    | VString s -> Format.printf "%s" s;
+    | VBool b -> Format.printf "%b" b;
+    | Closure (v, body, store) -> Format.printf "%s" v;
+    | _ -> failwith "unimplemented"
+  
+let rec print_store (s : store) =
+  List.iter (fun (var, v) -> Format.printf "%s: " var; print_value v) s; ()
 
 let evals (s : stmt) (sigma : store) : store =
   match s with
-  | Exp e -> []
-  | _ -> failwith "poop ass"
+  | Exp e -> [("shit", evale e sigma)]
+  | Print e -> ignore (print_value (evale e sigma)); sigma
+  | _ -> sigma

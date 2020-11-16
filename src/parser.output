@@ -42,7 +42,7 @@
   28       | exp GREATER exp
   29       | exp AND exp
   30       | exp OR exp
-  31       | exp EQUALS exp
+  31       | exp EQUALSEQUALS exp
   32       | exp STAR exp
   33       | exp MINUS exp
   34       | exp DIV exp
@@ -234,7 +234,7 @@ state 18
 
 	COLON  shift 16
 	RPAREN  reduce 23
-	EQUALS  reduce 23
+	EQUALSEQUALS  reduce 23
 	IS  reduce 23
 	IN  reduce 23
 	PLUS  reduce 23
@@ -287,7 +287,7 @@ state 22
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -301,7 +301,7 @@ state 22
 	bexp : exp . NEQ exp  (42)
 
 	RPAREN  shift 37
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -361,7 +361,7 @@ state 27
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -374,7 +374,7 @@ state 27
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -444,7 +444,7 @@ state 34
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -457,7 +457,7 @@ state 34
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -485,7 +485,7 @@ state 35
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -499,7 +499,7 @@ state 35
 	bexp : exp . NEQ exp  (42)
 
 	RPAREN  shift 58
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -532,7 +532,7 @@ state 37
 
 
 state 38
-	bexp : exp EQUALS . exp  (31)
+	bexp : exp EQUALSEQUALS . exp  (31)
 
 	VAR  shift 25
 	INT  shift 19
@@ -762,7 +762,7 @@ state 57
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -775,7 +775,7 @@ state 57
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -802,7 +802,7 @@ state 58
 	.  reduce 25
 
 
-59: shift/reduce conflict (shift 38, reduce 31) on EQUALS
+59: shift/reduce conflict (shift 38, reduce 31) on EQUALSEQUALS
 59: shift/reduce conflict (shift 39, reduce 31) on IS
 59: shift/reduce conflict (shift 40, reduce 31) on IN
 59: shift/reduce conflict (shift 41, reduce 31) on PLUS
@@ -825,8 +825,8 @@ state 59
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
-	bexp : exp EQUALS exp .  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
+	bexp : exp EQUALSEQUALS exp .  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -839,7 +839,7 @@ state 59
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -861,7 +861,7 @@ state 59
 	NEWLINE  reduce 31
 
 
-60: shift/reduce conflict (shift 38, reduce 40) on EQUALS
+60: shift/reduce conflict (shift 38, reduce 40) on EQUALSEQUALS
 60: shift/reduce conflict (shift 39, reduce 40) on IS
 60: shift/reduce conflict (shift 40, reduce 40) on IN
 60: shift/reduce conflict (shift 41, reduce 40) on PLUS
@@ -884,7 +884,7 @@ state 60
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -898,7 +898,7 @@ state 60
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -920,7 +920,7 @@ state 60
 	NEWLINE  reduce 40
 
 
-61: shift/reduce conflict (shift 38, reduce 41) on EQUALS
+61: shift/reduce conflict (shift 38, reduce 41) on EQUALSEQUALS
 61: shift/reduce conflict (shift 39, reduce 41) on IS
 61: shift/reduce conflict (shift 40, reduce 41) on IN
 61: shift/reduce conflict (shift 41, reduce 41) on PLUS
@@ -943,7 +943,7 @@ state 61
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -957,7 +957,7 @@ state 61
 	bexp : exp IN exp .  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -979,7 +979,7 @@ state 61
 	NEWLINE  reduce 41
 
 
-62: shift/reduce conflict (shift 38, reduce 26) on EQUALS
+62: shift/reduce conflict (shift 38, reduce 26) on EQUALSEQUALS
 62: shift/reduce conflict (shift 39, reduce 26) on IS
 62: shift/reduce conflict (shift 40, reduce 26) on IN
 62: shift/reduce conflict (shift 41, reduce 26) on PLUS
@@ -1003,7 +1003,7 @@ state 62
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1016,7 +1016,7 @@ state 62
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1038,7 +1038,7 @@ state 62
 	NEWLINE  reduce 26
 
 
-63: shift/reduce conflict (shift 38, reduce 33) on EQUALS
+63: shift/reduce conflict (shift 38, reduce 33) on EQUALSEQUALS
 63: shift/reduce conflict (shift 39, reduce 33) on IS
 63: shift/reduce conflict (shift 40, reduce 33) on IN
 63: shift/reduce conflict (shift 41, reduce 33) on PLUS
@@ -1061,7 +1061,7 @@ state 63
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp MINUS exp .  (33)
@@ -1075,7 +1075,7 @@ state 63
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1097,7 +1097,7 @@ state 63
 	NEWLINE  reduce 33
 
 
-64: shift/reduce conflict (shift 38, reduce 27) on EQUALS
+64: shift/reduce conflict (shift 38, reduce 27) on EQUALSEQUALS
 64: shift/reduce conflict (shift 39, reduce 27) on IS
 64: shift/reduce conflict (shift 40, reduce 27) on IN
 64: shift/reduce conflict (shift 41, reduce 27) on PLUS
@@ -1121,7 +1121,7 @@ state 64
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1134,7 +1134,7 @@ state 64
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1156,7 +1156,7 @@ state 64
 	NEWLINE  reduce 27
 
 
-65: shift/reduce conflict (shift 38, reduce 28) on EQUALS
+65: shift/reduce conflict (shift 38, reduce 28) on EQUALSEQUALS
 65: shift/reduce conflict (shift 39, reduce 28) on IS
 65: shift/reduce conflict (shift 40, reduce 28) on IN
 65: shift/reduce conflict (shift 41, reduce 28) on PLUS
@@ -1180,7 +1180,7 @@ state 65
 	bexp : exp GREATER exp .  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1193,7 +1193,7 @@ state 65
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1215,7 +1215,7 @@ state 65
 	NEWLINE  reduce 28
 
 
-66: shift/reduce conflict (shift 38, reduce 38) on EQUALS
+66: shift/reduce conflict (shift 38, reduce 38) on EQUALSEQUALS
 66: shift/reduce conflict (shift 39, reduce 38) on IS
 66: shift/reduce conflict (shift 40, reduce 38) on IN
 66: shift/reduce conflict (shift 41, reduce 38) on PLUS
@@ -1238,7 +1238,7 @@ state 66
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1252,7 +1252,7 @@ state 66
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1274,7 +1274,7 @@ state 66
 	NEWLINE  reduce 38
 
 
-67: shift/reduce conflict (shift 38, reduce 39) on EQUALS
+67: shift/reduce conflict (shift 38, reduce 39) on EQUALSEQUALS
 67: shift/reduce conflict (shift 39, reduce 39) on IS
 67: shift/reduce conflict (shift 40, reduce 39) on IN
 67: shift/reduce conflict (shift 41, reduce 39) on PLUS
@@ -1297,7 +1297,7 @@ state 67
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1311,7 +1311,7 @@ state 67
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1333,7 +1333,7 @@ state 67
 	NEWLINE  reduce 39
 
 
-68: shift/reduce conflict (shift 38, reduce 42) on EQUALS
+68: shift/reduce conflict (shift 38, reduce 42) on EQUALSEQUALS
 68: shift/reduce conflict (shift 39, reduce 42) on IS
 68: shift/reduce conflict (shift 40, reduce 42) on IN
 68: shift/reduce conflict (shift 41, reduce 42) on PLUS
@@ -1356,7 +1356,7 @@ state 68
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1370,7 +1370,7 @@ state 68
 	bexp : exp . NEQ exp  (42)
 	bexp : exp NEQ exp .  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1392,7 +1392,7 @@ state 68
 	NEWLINE  reduce 42
 
 
-69: shift/reduce conflict (shift 38, reduce 35) on EQUALS
+69: shift/reduce conflict (shift 38, reduce 35) on EQUALSEQUALS
 69: shift/reduce conflict (shift 39, reduce 35) on IS
 69: shift/reduce conflict (shift 40, reduce 35) on IN
 69: shift/reduce conflict (shift 41, reduce 35) on PLUS
@@ -1415,7 +1415,7 @@ state 69
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1429,7 +1429,7 @@ state 69
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1451,7 +1451,7 @@ state 69
 	NEWLINE  reduce 35
 
 
-70: shift/reduce conflict (shift 38, reduce 37) on EQUALS
+70: shift/reduce conflict (shift 38, reduce 37) on EQUALSEQUALS
 70: shift/reduce conflict (shift 39, reduce 37) on IS
 70: shift/reduce conflict (shift 40, reduce 37) on IN
 70: shift/reduce conflict (shift 41, reduce 37) on PLUS
@@ -1474,7 +1474,7 @@ state 70
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1488,7 +1488,7 @@ state 70
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1510,7 +1510,7 @@ state 70
 	NEWLINE  reduce 37
 
 
-71: shift/reduce conflict (shift 38, reduce 34) on EQUALS
+71: shift/reduce conflict (shift 38, reduce 34) on EQUALSEQUALS
 71: shift/reduce conflict (shift 39, reduce 34) on IS
 71: shift/reduce conflict (shift 40, reduce 34) on IN
 71: shift/reduce conflict (shift 41, reduce 34) on PLUS
@@ -1533,7 +1533,7 @@ state 71
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1547,7 +1547,7 @@ state 71
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1569,7 +1569,7 @@ state 71
 	NEWLINE  reduce 34
 
 
-72: shift/reduce conflict (shift 38, reduce 32) on EQUALS
+72: shift/reduce conflict (shift 38, reduce 32) on EQUALSEQUALS
 72: shift/reduce conflict (shift 39, reduce 32) on IS
 72: shift/reduce conflict (shift 40, reduce 32) on IN
 72: shift/reduce conflict (shift 41, reduce 32) on PLUS
@@ -1592,7 +1592,7 @@ state 72
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp STAR exp .  (32)
 	bexp : exp . MINUS exp  (33)
@@ -1606,7 +1606,7 @@ state 72
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1628,7 +1628,7 @@ state 72
 	NEWLINE  reduce 32
 
 
-73: shift/reduce conflict (shift 38, reduce 36) on EQUALS
+73: shift/reduce conflict (shift 38, reduce 36) on EQUALSEQUALS
 73: shift/reduce conflict (shift 39, reduce 36) on IS
 73: shift/reduce conflict (shift 40, reduce 36) on IN
 73: shift/reduce conflict (shift 41, reduce 36) on PLUS
@@ -1651,7 +1651,7 @@ state 73
 	bexp : exp . GREATER exp  (28)
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1665,7 +1665,7 @@ state 73
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1687,7 +1687,7 @@ state 73
 	NEWLINE  reduce 36
 
 
-74: shift/reduce conflict (shift 38, reduce 29) on EQUALS
+74: shift/reduce conflict (shift 38, reduce 29) on EQUALSEQUALS
 74: shift/reduce conflict (shift 39, reduce 29) on IS
 74: shift/reduce conflict (shift 40, reduce 29) on IN
 74: shift/reduce conflict (shift 41, reduce 29) on PLUS
@@ -1711,7 +1711,7 @@ state 74
 	bexp : exp . AND exp  (29)
 	bexp : exp AND exp .  (29)
 	bexp : exp . OR exp  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1724,7 +1724,7 @@ state 74
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41
@@ -1746,7 +1746,7 @@ state 74
 	NEWLINE  reduce 29
 
 
-75: shift/reduce conflict (shift 38, reduce 30) on EQUALS
+75: shift/reduce conflict (shift 38, reduce 30) on EQUALSEQUALS
 75: shift/reduce conflict (shift 39, reduce 30) on IS
 75: shift/reduce conflict (shift 40, reduce 30) on IN
 75: shift/reduce conflict (shift 41, reduce 30) on PLUS
@@ -1770,7 +1770,7 @@ state 75
 	bexp : exp . AND exp  (29)
 	bexp : exp . OR exp  (30)
 	bexp : exp OR exp .  (30)
-	bexp : exp . EQUALS exp  (31)
+	bexp : exp . EQUALSEQUALS exp  (31)
 	bexp : exp . STAR exp  (32)
 	bexp : exp . MINUS exp  (33)
 	bexp : exp . DIV exp  (34)
@@ -1783,7 +1783,7 @@ state 75
 	bexp : exp . IN exp  (41)
 	bexp : exp . NEQ exp  (42)
 
-	EQUALS  shift 38
+	EQUALSEQUALS  shift 38
 	IS  shift 39
 	IN  shift 40
 	PLUS  shift 41

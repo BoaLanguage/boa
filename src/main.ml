@@ -60,7 +60,7 @@ let () =
   (* (6) Pretty-print the final value. *)
   let _ =
     Format.printf "Result:@\n  @[";
-    Pprint.print_exp v;
+    Eval.print_store v;
     Format.printf "@]@\n";
     Format.printf "@]" in
   ()
