@@ -84,7 +84,7 @@ bexp:
     | exp GREATER exp                   { Binary(Greater, $1, $3) }
     | exp AND exp                       { Binary(And, $1, $3) }
     | exp OR exp                        { Binary(Or, $1, $3) }
-    | exp EQUALS exp                    { Binary(Equal, $1, $3) }
+    | exp EQUALSEQUALS exp              { Binary(Equal, $1, $3) }
     | exp STAR exp                      { Binary(Times, $1, $3) }
     | exp MINUS exp                     { Binary(Minus, $1, $3) }
     | exp DIV exp                       { Binary(Divide, $1, $3) }
