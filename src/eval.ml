@@ -58,6 +58,17 @@ let bool_of_value (v : value) : bool =
   | VBool b -> b
   | _ -> failwith "BIG PROBLEM"
 
+let print_value (v : value) =
+  match v with
+  | VInt i -> Format.printf "%d" i;
+  | VString s -> Format.printf "%s" s;
+  | VBool b -> Format.printf "%b" b;
+  | Closure (v, body, store) -> Format.printf "%s" "Some closure";
+  | _ -> failwith "unimplemented"
+
+let rec print_store (s : store) =
+  List.iter (fun (var, v) -> Format.printf "%s: " var; print_value v) s; ()
+
 let rec pow (a : int) (b : int) : int = 
   if (b = 0) then 1 else 
   if (b = 1) then a else pow (a * a) (b - 1)
@@ -130,8 +141,7 @@ let rec evals (conf:configuration) : store =
     | _ -> failwith "While guard must be a boolean")
 
   | sigma, Print(a), c, kappa -> let n = evale a sigma in 
-    (* print_int n; print_newline (); evals (sigma, Pass, c, kappa) *)
-    failwith "Unimplemented: Printing"
+    print_value n; Format.printf "%s" "\n"; evals (sigma, Pass, c, kappa)
 
   | sigma, Break, c, (c_b, c_c, _)::kappa_t -> 
     evals (sigma, c_b, Pass, kappa_t)
@@ -147,5 +157,5 @@ let rec evals (conf:configuration) : store =
     (name, Closure((List.map snd args), body, sigma))::sigma
   
   | (_,
-(Exp _|Decl (_, _)|AttrAssgn (_, _, _)|Sliceassgn (_, _, _)|
+(Exp _|Decl (_, _)|AttrAssgn (_, _, _)|SliceAssgn (_, _, _)|
 For (_, _, _)|Class (_, _, _)), _, _) -> failwith "unimplemented"

@@ -50,7 +50,7 @@ type stmt =
   | Assign of var * exp
   | Decl of typ * var
   | AttrAssgn of exp * var * exp
-  | Sliceassgn of exp * exp * exp
+  | SliceAssgn of exp * exp * exp
   | Return of exp
   | Print of exp
   | Block of stmt list

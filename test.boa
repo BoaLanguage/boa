@@ -1,3 +1,5 @@
-ble[4 + 533]
-def blent(x : Int) -> Int:
-  return none
+x = 531
+print x
+print x + 53
+def f(x : Int) -> Int:
+  return x + 32

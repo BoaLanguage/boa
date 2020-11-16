@@ -65,6 +65,7 @@ istmt:
     | fndef                             { $1 }
     | RETURN exp                        { Return($2) }
     | PRINT exp                         { Print($2) }
+    | exp LBRACK exp RBRACK EQUALS exp  { SliceAssgn($1, $3, $6)}
 
 assn:
     | VAR EQUALS exp                    { Assign($1, $3) }
@@ -77,7 +78,10 @@ exp:
     | INT                               { Int($1) }
     | VAR                               { Var($1) }
     | bexp                              { $1 }
+    | sliceexp                          { $1 }
     | LPAREN exp RPAREN                 { $2 }
+    
+sliceexp:
     | exp LBRACK exp RBRACK             { SliceAccess($1, $3) }
 
 bexp:
