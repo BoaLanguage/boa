@@ -78,11 +78,12 @@ let string_of_binop o =
   | Or -> "or"
   | Minus -> "-"
   | Times -> "*"
-  | Cons -> "::"
+  | _ -> failwith "Unimplemented"
 
 let string_of_unop o =
   match o with
   | Not -> "not"
+  | _ -> failwith "Unimplemented"
 
 (* Pretty print type t *)
 let print_typ t =

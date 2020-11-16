@@ -40,11 +40,14 @@ let () =
   let _ = if !nocheck then
       Format.printf "Type checking skipped.@\n@\n"
     else
-      let t = Check.check_exp e in
+    (match e with
+    | Exp (exp) -> 
+      let t = Check.check_exp exp in
       Format.printf "@[";
       Format.printf "Type:@\n  @[";
       Pprint.print_typ t;
       Format.printf "@]@\n@\n"
+    | _ -> failwith "not a stmt")
   in
 
   (* (5) Evaluate the expression. *)
@@ -52,7 +55,9 @@ let () =
     Format.printf "Evaluating the expression...@\n@\n";
     Format.print_flush () in
 
-  let v = Eval.eval e in
+  let v = (match e with
+  | Exp(exp) -> Eval.eval exp
+  | _ -> failwith "Unimplemented") in
 
   (* (6) Pretty-print the final value. *)
   let _ =

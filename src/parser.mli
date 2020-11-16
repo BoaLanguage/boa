@@ -1,38 +1,41 @@
 type token =
   | VAR of (string)
   | TNAME of (string)
+  | INT of (int)
+  | BOOL of (bool)
   | LPAREN
   | RPAREN
+  | LBRACK
+  | RBRACK
   | DOT
   | COLON
-  | EOF
-  | LAMBDA
+  | COMMA
   | ARROW
-  | LET
+  | LAMBDA
   | EQUALS
+  | EQUALSEQUALS
+  | DEF
+  | IS
   | IN
-  | INT of (int)
   | PLUS
   | MINUS
+  | EOF
   | LESS
   | GREATER
+  | LEQ
+  | GEQ
+  | NEQ
+  | MOD
+  | INTDIV
+  | DIV
+  | STAR
+  | STARSTAR
   | IF
-  | THEN
   | ELSE
-  | TRUE
-  | FALSE
+  | ELIF
   | AND
   | OR
   | NOT
-  | EMPTY
-  | CONS
-  | MATCH
-  | WEMPTY
-  | WHDREST
-  | LIST
-  | COMMA
-  | STAR
-  | FIX
 
 val prog :
-  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Ast.exp
+  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Ast.stmt
