@@ -15,24 +15,50 @@ type binop =
   | Equal
   | Times
   | Minus
-  | Cons
+  | Divide
+  | Mod
+  | Exponent
+  | IntDivide
+  | Leq
+  | Geq
+  | Is
+  | In
+  | Neq
 
 type unop =
   | Not
+  | Neg
 
 type exp =
-  | True
-  | False
-  | Empty of typ
-  | Int of int
   | Var of var
-  | App of exp * exp
-  | Lam of var * typ * exp
-  | Let of var * exp * exp
+  | Call of exp * exp list
+  | AttrAccess of exp * var
+  | SliceAccess of exp * exp 
   | Binary of binop * exp * exp
   | Unary of unop * exp
+  | Bool of bool
+  | Int of int
+  | String of string
+  | Lam of var * typ * exp
+  | Let of var * exp * exp
   | Tuple of exp list
-  | Proj of exp * int
-  | Fix of exp
-  | If of exp * exp * exp
-  | Match of exp * exp * exp
+  | List of exp list 
+  | Dict of (exp * exp) list 
+
+type stmt = 
+  | Exp of exp 
+  | Assign of var * exp
+  | Decl of typ * var
+  | AttrAssgn of exp * var * exp
+  | Sliceassgn of exp * exp * exp
+  | Return of exp
+  | Print of exp
+  | Block of stmt list
+  | If of exp * stmt * stmt
+  | While of exp * stmt
+  | For of var * exp * stmt
+  | Class of var * exp * stmt
+  | Def of typ * var * (typ * var) list * stmt
+  | Break
+  | Continue
+  | Pass

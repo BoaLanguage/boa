@@ -15,22 +15,22 @@
 %}
 
 %token <string> VAR TNAME
-%token LPAREN RPAREN DOT COLON EOF
-%token LAMBDA ARROW
-%token LET EQUALS IN
 %token <int> INT
-%token PLUS MINUS LESS GREATER
-%token IF THEN ELSE TRUE FALSE AND OR NOT
-%token EMPTY CONS MATCH WEMPTY WHDREST LIST
-%token COMMA STAR
-%token FIX
+%token <bool> BOOL
+%token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA
+%token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
+%token EOF LESS GREATER LEQ GEQ NEQ
+%token COMMA MOD INTDIV DIV
+%token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD
 
-%type <Ast.exp> prog
+%type <Ast.stmt> prog
 
 %start prog
 
 %%
-prog: exp EOF                           { $1 }
+prog: stmt EOF                          { $1 }
+
+stmt: 
 
 exp:
     | LET VAR EQUALS exp IN exp         { Let($2, $4, $6) }
@@ -88,11 +88,7 @@ multexp:
     | appexp                           { $1 }
 
 appexp:
-    | appexp pexp                       { App($1, $2) }
-    | pexp                              { $1 }
-
-pexp:
-    | pexp DOT INT                      { Proj($1, $3) }
+    | appexp aexp                       { App($1, $2) }
     | aexp                              { $1 }
 
 aexp:

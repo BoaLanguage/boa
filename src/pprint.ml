@@ -107,7 +107,8 @@ let print_typ t =
 (* Pretty print expression e *)
 let print_exp e =
   let rec loop e =
-    match e with
+    failwith "unimplemented"
+    (* match e with
     | True -> Format.printf "%s" "true"
     | False -> Format.printf "%s" "false"
     | Empty t -> print_empty loop print_typ t e
@@ -122,7 +123,7 @@ let print_exp e =
     | Proj (e, i) -> (loop e); Format.printf ".%i" i
     | Fix e -> Format.printf "fix "; loop e
     | If (e1, e2, e3) -> print_if loop e1 e2 e3
-    | Match (e1, e2, e3) -> print_match loop e1 e2 e3
+    | Match (e1, e2, e3) -> print_match loop e1 e2 e3 *)
   in
   Format.printf "@[";
   loop e;

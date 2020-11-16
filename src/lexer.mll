@@ -19,33 +19,36 @@ rule token = parse
 | ":"              { COLON }
 | "->"             { ARROW }
 | "lambda"         { LAMBDA }
-| "let"            { LET }
+| "=="             { EQUALSEQUALS }
 | "="              { EQUALS }
-| "in"             { IN }
+| "def"            { DEF }
+| "is"             { IS }
 | "+"              { PLUS }
 | "-"              { MINUS }
 | "<"              { LESS }
 | ">"              { GREATER }
+| ">="             { GEQ }
+| "<="             { LEQ }
 | ","              { COMMA }
+| "%"              { MOD }
+| "**"             { STARSTAR }
+| "//"             { INTDIV }
+| "!="             { NEQ }
+| "in"             { IN }
 | "*"              { STAR }
-| "List"           { LIST }
-| "fix"            { FIX }
-| "true"           { TRUE }
-| "false"          { FALSE }
+| "True"           { BOOL(true) }
+| "False"          { BOOL(false) }
 | "if"             { IF }
-| "then"           { THEN }
 | "else"           { ELSE }
+| "elif"           { ELIF }
 | "and"            { AND }
 | "or"             { OR }
 | "not"            { NOT }
-| "::"             { CONS }
-| "empty"          { EMPTY }
-| "match"          { MATCH }
-| "with_empty"     { WEMPTY }
-| "with_head_rest" { WHDREST }
 | id as v          { VAR(v) }
 | bigid as i       { TNAME(i) }
 | digit+ as n      { INT(int_of_string n) }
+| "["              { LBRACK }
+| "]"              { RBRACK }
 | eof              { EOF }
 
 | _ as c  {
