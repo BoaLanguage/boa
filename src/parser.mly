@@ -67,9 +67,23 @@ exp:
     | INT                               { Int($1) }
     | VAR                               { Var($1) }
     | bexp                              { $1 }
+    | LPAREN exp RPAREN                 { $2 }
 
 bexp:
     | exp PLUS exp                      { Binary(Plus, $1, $3) }
     | exp LESS exp                      { Binary(Less, $1, $3) }
     | exp GREATER exp                   { Binary(Greater, $1, $3) }
     | exp AND exp                       { Binary(And, $1, $3) }
+    | exp OR exp                        { Binary(Or, $1, $3) }
+    | exp EQUALS exp                    { Binary(Equal, $1, $3) }
+    | exp STAR exp                      { Binary(Times, $1, $3) }
+    | exp MINUS exp                     { Binary(Minus, $1, $3) }
+    | exp DIV exp                       { Binary(Divide, $1, $3) }
+    | exp MOD exp                       { Binary(Mod, $1, $3) }
+    | exp STARSTAR exp                  { Binary(Exponent, $1, $3) }
+    | exp INTDIV exp                    { Binary(IntDivide, $1, $3) }
+    | exp LEQ exp                       { Binary(Leq, $1, $3) }
+    | exp GEQ exp                       { Binary(Geq, $1, $3) }
+    | exp IS exp                        { Binary(Is, $1, $3) }
+    | exp IN exp                        { Binary(In, $1, $3) }
+    | exp NEQ exp                       { Binary(Neq, $1, $3) }

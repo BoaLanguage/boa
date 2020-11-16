@@ -29,10 +29,27 @@
   18  exp : INT
   19      | VAR
   20      | bexp
+  21      | LPAREN exp RPAREN
 
-  21  bexp : exp PLUS exp
+  22  bexp : exp PLUS exp
+  23       | exp LESS exp
+  24       | exp GREATER exp
+  25       | exp AND exp
+  26       | exp OR exp
+  27       | exp EQUALS exp
+  28       | exp STAR exp
+  29       | exp MINUS exp
+  30       | exp DIV exp
+  31       | exp MOD exp
+  32       | exp STARSTAR exp
+  33       | exp INTDIV exp
+  34       | exp LEQ exp
+  35       | exp GEQ exp
+  36       | exp IS exp
+  37       | exp IN exp
+  38       | exp NEQ exp
 
-  22  %entry% : '\001' prog
+  39  %entry% : '\001' prog
 
 state 0
 	$accept : . %entry% $end  (0)
@@ -44,7 +61,7 @@ state 0
 
 
 state 1
-	%entry% : '\001' . prog  (22)
+	%entry% : '\001' . prog  (39)
 
 	VAR  shift 3
 	TNAME  shift 4
@@ -87,16 +104,17 @@ state 5
 
 	VAR  shift 17
 	INT  shift 18
+	LPAREN  shift 19
 	.  error
 
-	exp  goto 19
-	bexp  goto 20
+	exp  goto 20
+	bexp  goto 21
 
 
 state 6
 	fndef : DEF . VAR declwrapper ARROW TNAME COLON NEWLINE block  (5)
 
-	VAR  shift 21
+	VAR  shift 22
 	.  error
 
 
@@ -105,22 +123,23 @@ state 7
 
 	VAR  shift 17
 	INT  shift 18
+	LPAREN  shift 19
 	.  error
 
-	exp  goto 22
-	bexp  goto 20
+	exp  goto 23
+	bexp  goto 21
 
 
 state 8
-	%entry% : '\001' prog .  (22)
+	%entry% : '\001' prog .  (39)
 
-	.  reduce 22
+	.  reduce 39
 
 
 state 9
 	prog : block . EOF  (1)
 
-	EOF  shift 23
+	EOF  shift 24
 	.  error
 
 
@@ -142,7 +161,7 @@ state 11
 	EOF  reduce 3
 	NEWLINE  reduce 3
 
-	blockl  goto 24
+	blockl  goto 25
 	stmt  goto 11
 	fndef  goto 12
 	istmt  goto 13
@@ -159,8 +178,8 @@ state 13
 	stmt : istmt . NEWLINE  (10)
 	stmt : istmt . EOF  (11)
 
-	EOF  shift 25
-	NEWLINE  shift 26
+	EOF  shift 26
+	NEWLINE  shift 27
 	.  error
 
 
@@ -175,10 +194,11 @@ state 15
 
 	VAR  shift 17
 	INT  shift 18
+	LPAREN  shift 19
 	.  error
 
-	exp  goto 27
-	bexp  goto 20
+	exp  goto 28
+	bexp  goto 21
 
 
 state 16
@@ -200,189 +220,1529 @@ state 18
 
 
 state 19
-	istmt : LPAREN exp . RPAREN  (12)
-	bexp : exp . PLUS exp  (21)
+	exp : LPAREN . exp RPAREN  (21)
 
-	RPAREN  shift 28
-	PLUS  shift 29
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
 	.  error
+
+	exp  goto 29
+	bexp  goto 21
 
 
 state 20
+	istmt : LPAREN exp . RPAREN  (12)
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	RPAREN  shift 30
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	.  error
+
+
+state 21
 	exp : bexp .  (20)
 
 	.  reduce 20
 
 
-state 21
+state 22
 	fndef : DEF VAR . declwrapper ARROW TNAME COLON NEWLINE block  (5)
 
-	LPAREN  shift 30
+	LPAREN  shift 48
 	.  error
 
-	declwrapper  goto 31
+	declwrapper  goto 49
 
 
-state 22
+state 23
 	istmt : RETURN exp .  (16)
-	bexp : exp . PLUS exp  (21)
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
 
-	PLUS  shift 29
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
 	EOF  reduce 16
 	NEWLINE  reduce 16
 
 
-state 23
+state 24
 	prog : block EOF .  (1)
 
 	.  reduce 1
 
 
-state 24
+state 25
 	blockl : stmt blockl .  (4)
 
 	.  reduce 4
 
 
-state 25
+state 26
 	stmt : istmt EOF .  (11)
 
 	.  reduce 11
 
 
-state 26
+state 27
 	stmt : istmt NEWLINE .  (10)
 
 	.  reduce 10
 
 
-state 27
+state 28
 	istmt : VAR EQUALS exp .  (13)
-	bexp : exp . PLUS exp  (21)
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
 
-	PLUS  shift 29
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
 	EOF  reduce 13
 	NEWLINE  reduce 13
 
 
-state 28
+state 29
+	exp : LPAREN exp . RPAREN  (21)
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	RPAREN  shift 50
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	.  error
+
+
+state 30
 	istmt : LPAREN exp RPAREN .  (12)
 
 	.  reduce 12
 
 
-state 29
-	bexp : exp PLUS . exp  (21)
+state 31
+	bexp : exp EQUALS . exp  (27)
 
 	VAR  shift 17
 	INT  shift 18
+	LPAREN  shift 19
 	.  error
 
-	exp  goto 32
-	bexp  goto 20
+	exp  goto 51
+	bexp  goto 21
 
 
-state 30
-	declwrapper : LPAREN . declist RPAREN  (6)
-	declwrapper : LPAREN . RPAREN  (7)
-
-	TNAME  shift 33
-	RPAREN  shift 34
-	.  error
-
-	declist  goto 35
-
-
-state 31
-	fndef : DEF VAR declwrapper . ARROW TNAME COLON NEWLINE block  (5)
-
-	ARROW  shift 36
-	.  error
-
-
-32: shift/reduce conflict (shift 29, reduce 21) on PLUS
 state 32
-	bexp : exp . PLUS exp  (21)
-	bexp : exp PLUS exp .  (21)
+	bexp : exp IS . exp  (36)
 
-	PLUS  shift 29
-	RPAREN  reduce 21
-	EOF  reduce 21
-	NEWLINE  reduce 21
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 52
+	bexp  goto 21
 
 
 state 33
-	declist : TNAME . VAR  (8)
-	declist : TNAME . VAR COMMA declist  (9)
+	bexp : exp IN . exp  (37)
 
-	VAR  shift 37
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
 	.  error
+
+	exp  goto 53
+	bexp  goto 21
 
 
 state 34
+	bexp : exp PLUS . exp  (22)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 54
+	bexp  goto 21
+
+
+state 35
+	bexp : exp MINUS . exp  (29)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 55
+	bexp  goto 21
+
+
+state 36
+	bexp : exp LESS . exp  (23)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 56
+	bexp  goto 21
+
+
+state 37
+	bexp : exp GREATER . exp  (24)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 57
+	bexp  goto 21
+
+
+state 38
+	bexp : exp LEQ . exp  (34)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 58
+	bexp  goto 21
+
+
+state 39
+	bexp : exp GEQ . exp  (35)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 59
+	bexp  goto 21
+
+
+state 40
+	bexp : exp NEQ . exp  (38)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 60
+	bexp  goto 21
+
+
+state 41
+	bexp : exp MOD . exp  (31)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 61
+	bexp  goto 21
+
+
+state 42
+	bexp : exp INTDIV . exp  (33)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 62
+	bexp  goto 21
+
+
+state 43
+	bexp : exp DIV . exp  (30)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 63
+	bexp  goto 21
+
+
+state 44
+	bexp : exp STAR . exp  (28)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 64
+	bexp  goto 21
+
+
+state 45
+	bexp : exp STARSTAR . exp  (32)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 65
+	bexp  goto 21
+
+
+state 46
+	bexp : exp AND . exp  (25)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 66
+	bexp  goto 21
+
+
+state 47
+	bexp : exp OR . exp  (26)
+
+	VAR  shift 17
+	INT  shift 18
+	LPAREN  shift 19
+	.  error
+
+	exp  goto 67
+	bexp  goto 21
+
+
+state 48
+	declwrapper : LPAREN . declist RPAREN  (6)
+	declwrapper : LPAREN . RPAREN  (7)
+
+	TNAME  shift 68
+	RPAREN  shift 69
+	.  error
+
+	declist  goto 70
+
+
+state 49
+	fndef : DEF VAR declwrapper . ARROW TNAME COLON NEWLINE block  (5)
+
+	ARROW  shift 71
+	.  error
+
+
+state 50
+	exp : LPAREN exp RPAREN .  (21)
+
+	.  reduce 21
+
+
+51: shift/reduce conflict (shift 31, reduce 27) on EQUALS
+51: shift/reduce conflict (shift 32, reduce 27) on IS
+51: shift/reduce conflict (shift 33, reduce 27) on IN
+51: shift/reduce conflict (shift 34, reduce 27) on PLUS
+51: shift/reduce conflict (shift 35, reduce 27) on MINUS
+51: shift/reduce conflict (shift 36, reduce 27) on LESS
+51: shift/reduce conflict (shift 37, reduce 27) on GREATER
+51: shift/reduce conflict (shift 38, reduce 27) on LEQ
+51: shift/reduce conflict (shift 39, reduce 27) on GEQ
+51: shift/reduce conflict (shift 40, reduce 27) on NEQ
+51: shift/reduce conflict (shift 41, reduce 27) on MOD
+51: shift/reduce conflict (shift 42, reduce 27) on INTDIV
+51: shift/reduce conflict (shift 43, reduce 27) on DIV
+51: shift/reduce conflict (shift 44, reduce 27) on STAR
+51: shift/reduce conflict (shift 45, reduce 27) on STARSTAR
+51: shift/reduce conflict (shift 46, reduce 27) on AND
+51: shift/reduce conflict (shift 47, reduce 27) on OR
+state 51
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp EQUALS exp .  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 27
+	EOF  reduce 27
+	NEWLINE  reduce 27
+
+
+52: shift/reduce conflict (shift 31, reduce 36) on EQUALS
+52: shift/reduce conflict (shift 32, reduce 36) on IS
+52: shift/reduce conflict (shift 33, reduce 36) on IN
+52: shift/reduce conflict (shift 34, reduce 36) on PLUS
+52: shift/reduce conflict (shift 35, reduce 36) on MINUS
+52: shift/reduce conflict (shift 36, reduce 36) on LESS
+52: shift/reduce conflict (shift 37, reduce 36) on GREATER
+52: shift/reduce conflict (shift 38, reduce 36) on LEQ
+52: shift/reduce conflict (shift 39, reduce 36) on GEQ
+52: shift/reduce conflict (shift 40, reduce 36) on NEQ
+52: shift/reduce conflict (shift 41, reduce 36) on MOD
+52: shift/reduce conflict (shift 42, reduce 36) on INTDIV
+52: shift/reduce conflict (shift 43, reduce 36) on DIV
+52: shift/reduce conflict (shift 44, reduce 36) on STAR
+52: shift/reduce conflict (shift 45, reduce 36) on STARSTAR
+52: shift/reduce conflict (shift 46, reduce 36) on AND
+52: shift/reduce conflict (shift 47, reduce 36) on OR
+state 52
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp IS exp .  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 36
+	EOF  reduce 36
+	NEWLINE  reduce 36
+
+
+53: shift/reduce conflict (shift 31, reduce 37) on EQUALS
+53: shift/reduce conflict (shift 32, reduce 37) on IS
+53: shift/reduce conflict (shift 33, reduce 37) on IN
+53: shift/reduce conflict (shift 34, reduce 37) on PLUS
+53: shift/reduce conflict (shift 35, reduce 37) on MINUS
+53: shift/reduce conflict (shift 36, reduce 37) on LESS
+53: shift/reduce conflict (shift 37, reduce 37) on GREATER
+53: shift/reduce conflict (shift 38, reduce 37) on LEQ
+53: shift/reduce conflict (shift 39, reduce 37) on GEQ
+53: shift/reduce conflict (shift 40, reduce 37) on NEQ
+53: shift/reduce conflict (shift 41, reduce 37) on MOD
+53: shift/reduce conflict (shift 42, reduce 37) on INTDIV
+53: shift/reduce conflict (shift 43, reduce 37) on DIV
+53: shift/reduce conflict (shift 44, reduce 37) on STAR
+53: shift/reduce conflict (shift 45, reduce 37) on STARSTAR
+53: shift/reduce conflict (shift 46, reduce 37) on AND
+53: shift/reduce conflict (shift 47, reduce 37) on OR
+state 53
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp IN exp .  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 37
+	EOF  reduce 37
+	NEWLINE  reduce 37
+
+
+54: shift/reduce conflict (shift 31, reduce 22) on EQUALS
+54: shift/reduce conflict (shift 32, reduce 22) on IS
+54: shift/reduce conflict (shift 33, reduce 22) on IN
+54: shift/reduce conflict (shift 34, reduce 22) on PLUS
+54: shift/reduce conflict (shift 35, reduce 22) on MINUS
+54: shift/reduce conflict (shift 36, reduce 22) on LESS
+54: shift/reduce conflict (shift 37, reduce 22) on GREATER
+54: shift/reduce conflict (shift 38, reduce 22) on LEQ
+54: shift/reduce conflict (shift 39, reduce 22) on GEQ
+54: shift/reduce conflict (shift 40, reduce 22) on NEQ
+54: shift/reduce conflict (shift 41, reduce 22) on MOD
+54: shift/reduce conflict (shift 42, reduce 22) on INTDIV
+54: shift/reduce conflict (shift 43, reduce 22) on DIV
+54: shift/reduce conflict (shift 44, reduce 22) on STAR
+54: shift/reduce conflict (shift 45, reduce 22) on STARSTAR
+54: shift/reduce conflict (shift 46, reduce 22) on AND
+54: shift/reduce conflict (shift 47, reduce 22) on OR
+state 54
+	bexp : exp . PLUS exp  (22)
+	bexp : exp PLUS exp .  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 22
+	EOF  reduce 22
+	NEWLINE  reduce 22
+
+
+55: shift/reduce conflict (shift 31, reduce 29) on EQUALS
+55: shift/reduce conflict (shift 32, reduce 29) on IS
+55: shift/reduce conflict (shift 33, reduce 29) on IN
+55: shift/reduce conflict (shift 34, reduce 29) on PLUS
+55: shift/reduce conflict (shift 35, reduce 29) on MINUS
+55: shift/reduce conflict (shift 36, reduce 29) on LESS
+55: shift/reduce conflict (shift 37, reduce 29) on GREATER
+55: shift/reduce conflict (shift 38, reduce 29) on LEQ
+55: shift/reduce conflict (shift 39, reduce 29) on GEQ
+55: shift/reduce conflict (shift 40, reduce 29) on NEQ
+55: shift/reduce conflict (shift 41, reduce 29) on MOD
+55: shift/reduce conflict (shift 42, reduce 29) on INTDIV
+55: shift/reduce conflict (shift 43, reduce 29) on DIV
+55: shift/reduce conflict (shift 44, reduce 29) on STAR
+55: shift/reduce conflict (shift 45, reduce 29) on STARSTAR
+55: shift/reduce conflict (shift 46, reduce 29) on AND
+55: shift/reduce conflict (shift 47, reduce 29) on OR
+state 55
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp MINUS exp .  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 29
+	EOF  reduce 29
+	NEWLINE  reduce 29
+
+
+56: shift/reduce conflict (shift 31, reduce 23) on EQUALS
+56: shift/reduce conflict (shift 32, reduce 23) on IS
+56: shift/reduce conflict (shift 33, reduce 23) on IN
+56: shift/reduce conflict (shift 34, reduce 23) on PLUS
+56: shift/reduce conflict (shift 35, reduce 23) on MINUS
+56: shift/reduce conflict (shift 36, reduce 23) on LESS
+56: shift/reduce conflict (shift 37, reduce 23) on GREATER
+56: shift/reduce conflict (shift 38, reduce 23) on LEQ
+56: shift/reduce conflict (shift 39, reduce 23) on GEQ
+56: shift/reduce conflict (shift 40, reduce 23) on NEQ
+56: shift/reduce conflict (shift 41, reduce 23) on MOD
+56: shift/reduce conflict (shift 42, reduce 23) on INTDIV
+56: shift/reduce conflict (shift 43, reduce 23) on DIV
+56: shift/reduce conflict (shift 44, reduce 23) on STAR
+56: shift/reduce conflict (shift 45, reduce 23) on STARSTAR
+56: shift/reduce conflict (shift 46, reduce 23) on AND
+56: shift/reduce conflict (shift 47, reduce 23) on OR
+state 56
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp LESS exp .  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 23
+	EOF  reduce 23
+	NEWLINE  reduce 23
+
+
+57: shift/reduce conflict (shift 31, reduce 24) on EQUALS
+57: shift/reduce conflict (shift 32, reduce 24) on IS
+57: shift/reduce conflict (shift 33, reduce 24) on IN
+57: shift/reduce conflict (shift 34, reduce 24) on PLUS
+57: shift/reduce conflict (shift 35, reduce 24) on MINUS
+57: shift/reduce conflict (shift 36, reduce 24) on LESS
+57: shift/reduce conflict (shift 37, reduce 24) on GREATER
+57: shift/reduce conflict (shift 38, reduce 24) on LEQ
+57: shift/reduce conflict (shift 39, reduce 24) on GEQ
+57: shift/reduce conflict (shift 40, reduce 24) on NEQ
+57: shift/reduce conflict (shift 41, reduce 24) on MOD
+57: shift/reduce conflict (shift 42, reduce 24) on INTDIV
+57: shift/reduce conflict (shift 43, reduce 24) on DIV
+57: shift/reduce conflict (shift 44, reduce 24) on STAR
+57: shift/reduce conflict (shift 45, reduce 24) on STARSTAR
+57: shift/reduce conflict (shift 46, reduce 24) on AND
+57: shift/reduce conflict (shift 47, reduce 24) on OR
+state 57
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp GREATER exp .  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 24
+	EOF  reduce 24
+	NEWLINE  reduce 24
+
+
+58: shift/reduce conflict (shift 31, reduce 34) on EQUALS
+58: shift/reduce conflict (shift 32, reduce 34) on IS
+58: shift/reduce conflict (shift 33, reduce 34) on IN
+58: shift/reduce conflict (shift 34, reduce 34) on PLUS
+58: shift/reduce conflict (shift 35, reduce 34) on MINUS
+58: shift/reduce conflict (shift 36, reduce 34) on LESS
+58: shift/reduce conflict (shift 37, reduce 34) on GREATER
+58: shift/reduce conflict (shift 38, reduce 34) on LEQ
+58: shift/reduce conflict (shift 39, reduce 34) on GEQ
+58: shift/reduce conflict (shift 40, reduce 34) on NEQ
+58: shift/reduce conflict (shift 41, reduce 34) on MOD
+58: shift/reduce conflict (shift 42, reduce 34) on INTDIV
+58: shift/reduce conflict (shift 43, reduce 34) on DIV
+58: shift/reduce conflict (shift 44, reduce 34) on STAR
+58: shift/reduce conflict (shift 45, reduce 34) on STARSTAR
+58: shift/reduce conflict (shift 46, reduce 34) on AND
+58: shift/reduce conflict (shift 47, reduce 34) on OR
+state 58
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp LEQ exp .  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 34
+	EOF  reduce 34
+	NEWLINE  reduce 34
+
+
+59: shift/reduce conflict (shift 31, reduce 35) on EQUALS
+59: shift/reduce conflict (shift 32, reduce 35) on IS
+59: shift/reduce conflict (shift 33, reduce 35) on IN
+59: shift/reduce conflict (shift 34, reduce 35) on PLUS
+59: shift/reduce conflict (shift 35, reduce 35) on MINUS
+59: shift/reduce conflict (shift 36, reduce 35) on LESS
+59: shift/reduce conflict (shift 37, reduce 35) on GREATER
+59: shift/reduce conflict (shift 38, reduce 35) on LEQ
+59: shift/reduce conflict (shift 39, reduce 35) on GEQ
+59: shift/reduce conflict (shift 40, reduce 35) on NEQ
+59: shift/reduce conflict (shift 41, reduce 35) on MOD
+59: shift/reduce conflict (shift 42, reduce 35) on INTDIV
+59: shift/reduce conflict (shift 43, reduce 35) on DIV
+59: shift/reduce conflict (shift 44, reduce 35) on STAR
+59: shift/reduce conflict (shift 45, reduce 35) on STARSTAR
+59: shift/reduce conflict (shift 46, reduce 35) on AND
+59: shift/reduce conflict (shift 47, reduce 35) on OR
+state 59
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp GEQ exp .  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 35
+	EOF  reduce 35
+	NEWLINE  reduce 35
+
+
+60: shift/reduce conflict (shift 31, reduce 38) on EQUALS
+60: shift/reduce conflict (shift 32, reduce 38) on IS
+60: shift/reduce conflict (shift 33, reduce 38) on IN
+60: shift/reduce conflict (shift 34, reduce 38) on PLUS
+60: shift/reduce conflict (shift 35, reduce 38) on MINUS
+60: shift/reduce conflict (shift 36, reduce 38) on LESS
+60: shift/reduce conflict (shift 37, reduce 38) on GREATER
+60: shift/reduce conflict (shift 38, reduce 38) on LEQ
+60: shift/reduce conflict (shift 39, reduce 38) on GEQ
+60: shift/reduce conflict (shift 40, reduce 38) on NEQ
+60: shift/reduce conflict (shift 41, reduce 38) on MOD
+60: shift/reduce conflict (shift 42, reduce 38) on INTDIV
+60: shift/reduce conflict (shift 43, reduce 38) on DIV
+60: shift/reduce conflict (shift 44, reduce 38) on STAR
+60: shift/reduce conflict (shift 45, reduce 38) on STARSTAR
+60: shift/reduce conflict (shift 46, reduce 38) on AND
+60: shift/reduce conflict (shift 47, reduce 38) on OR
+state 60
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+	bexp : exp NEQ exp .  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 38
+	EOF  reduce 38
+	NEWLINE  reduce 38
+
+
+61: shift/reduce conflict (shift 31, reduce 31) on EQUALS
+61: shift/reduce conflict (shift 32, reduce 31) on IS
+61: shift/reduce conflict (shift 33, reduce 31) on IN
+61: shift/reduce conflict (shift 34, reduce 31) on PLUS
+61: shift/reduce conflict (shift 35, reduce 31) on MINUS
+61: shift/reduce conflict (shift 36, reduce 31) on LESS
+61: shift/reduce conflict (shift 37, reduce 31) on GREATER
+61: shift/reduce conflict (shift 38, reduce 31) on LEQ
+61: shift/reduce conflict (shift 39, reduce 31) on GEQ
+61: shift/reduce conflict (shift 40, reduce 31) on NEQ
+61: shift/reduce conflict (shift 41, reduce 31) on MOD
+61: shift/reduce conflict (shift 42, reduce 31) on INTDIV
+61: shift/reduce conflict (shift 43, reduce 31) on DIV
+61: shift/reduce conflict (shift 44, reduce 31) on STAR
+61: shift/reduce conflict (shift 45, reduce 31) on STARSTAR
+61: shift/reduce conflict (shift 46, reduce 31) on AND
+61: shift/reduce conflict (shift 47, reduce 31) on OR
+state 61
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp MOD exp .  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 31
+	EOF  reduce 31
+	NEWLINE  reduce 31
+
+
+62: shift/reduce conflict (shift 31, reduce 33) on EQUALS
+62: shift/reduce conflict (shift 32, reduce 33) on IS
+62: shift/reduce conflict (shift 33, reduce 33) on IN
+62: shift/reduce conflict (shift 34, reduce 33) on PLUS
+62: shift/reduce conflict (shift 35, reduce 33) on MINUS
+62: shift/reduce conflict (shift 36, reduce 33) on LESS
+62: shift/reduce conflict (shift 37, reduce 33) on GREATER
+62: shift/reduce conflict (shift 38, reduce 33) on LEQ
+62: shift/reduce conflict (shift 39, reduce 33) on GEQ
+62: shift/reduce conflict (shift 40, reduce 33) on NEQ
+62: shift/reduce conflict (shift 41, reduce 33) on MOD
+62: shift/reduce conflict (shift 42, reduce 33) on INTDIV
+62: shift/reduce conflict (shift 43, reduce 33) on DIV
+62: shift/reduce conflict (shift 44, reduce 33) on STAR
+62: shift/reduce conflict (shift 45, reduce 33) on STARSTAR
+62: shift/reduce conflict (shift 46, reduce 33) on AND
+62: shift/reduce conflict (shift 47, reduce 33) on OR
+state 62
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp INTDIV exp .  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 33
+	EOF  reduce 33
+	NEWLINE  reduce 33
+
+
+63: shift/reduce conflict (shift 31, reduce 30) on EQUALS
+63: shift/reduce conflict (shift 32, reduce 30) on IS
+63: shift/reduce conflict (shift 33, reduce 30) on IN
+63: shift/reduce conflict (shift 34, reduce 30) on PLUS
+63: shift/reduce conflict (shift 35, reduce 30) on MINUS
+63: shift/reduce conflict (shift 36, reduce 30) on LESS
+63: shift/reduce conflict (shift 37, reduce 30) on GREATER
+63: shift/reduce conflict (shift 38, reduce 30) on LEQ
+63: shift/reduce conflict (shift 39, reduce 30) on GEQ
+63: shift/reduce conflict (shift 40, reduce 30) on NEQ
+63: shift/reduce conflict (shift 41, reduce 30) on MOD
+63: shift/reduce conflict (shift 42, reduce 30) on INTDIV
+63: shift/reduce conflict (shift 43, reduce 30) on DIV
+63: shift/reduce conflict (shift 44, reduce 30) on STAR
+63: shift/reduce conflict (shift 45, reduce 30) on STARSTAR
+63: shift/reduce conflict (shift 46, reduce 30) on AND
+63: shift/reduce conflict (shift 47, reduce 30) on OR
+state 63
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp DIV exp .  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 30
+	EOF  reduce 30
+	NEWLINE  reduce 30
+
+
+64: shift/reduce conflict (shift 31, reduce 28) on EQUALS
+64: shift/reduce conflict (shift 32, reduce 28) on IS
+64: shift/reduce conflict (shift 33, reduce 28) on IN
+64: shift/reduce conflict (shift 34, reduce 28) on PLUS
+64: shift/reduce conflict (shift 35, reduce 28) on MINUS
+64: shift/reduce conflict (shift 36, reduce 28) on LESS
+64: shift/reduce conflict (shift 37, reduce 28) on GREATER
+64: shift/reduce conflict (shift 38, reduce 28) on LEQ
+64: shift/reduce conflict (shift 39, reduce 28) on GEQ
+64: shift/reduce conflict (shift 40, reduce 28) on NEQ
+64: shift/reduce conflict (shift 41, reduce 28) on MOD
+64: shift/reduce conflict (shift 42, reduce 28) on INTDIV
+64: shift/reduce conflict (shift 43, reduce 28) on DIV
+64: shift/reduce conflict (shift 44, reduce 28) on STAR
+64: shift/reduce conflict (shift 45, reduce 28) on STARSTAR
+64: shift/reduce conflict (shift 46, reduce 28) on AND
+64: shift/reduce conflict (shift 47, reduce 28) on OR
+state 64
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp STAR exp .  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 28
+	EOF  reduce 28
+	NEWLINE  reduce 28
+
+
+65: shift/reduce conflict (shift 31, reduce 32) on EQUALS
+65: shift/reduce conflict (shift 32, reduce 32) on IS
+65: shift/reduce conflict (shift 33, reduce 32) on IN
+65: shift/reduce conflict (shift 34, reduce 32) on PLUS
+65: shift/reduce conflict (shift 35, reduce 32) on MINUS
+65: shift/reduce conflict (shift 36, reduce 32) on LESS
+65: shift/reduce conflict (shift 37, reduce 32) on GREATER
+65: shift/reduce conflict (shift 38, reduce 32) on LEQ
+65: shift/reduce conflict (shift 39, reduce 32) on GEQ
+65: shift/reduce conflict (shift 40, reduce 32) on NEQ
+65: shift/reduce conflict (shift 41, reduce 32) on MOD
+65: shift/reduce conflict (shift 42, reduce 32) on INTDIV
+65: shift/reduce conflict (shift 43, reduce 32) on DIV
+65: shift/reduce conflict (shift 44, reduce 32) on STAR
+65: shift/reduce conflict (shift 45, reduce 32) on STARSTAR
+65: shift/reduce conflict (shift 46, reduce 32) on AND
+65: shift/reduce conflict (shift 47, reduce 32) on OR
+state 65
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp STARSTAR exp .  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 32
+	EOF  reduce 32
+	NEWLINE  reduce 32
+
+
+66: shift/reduce conflict (shift 31, reduce 25) on EQUALS
+66: shift/reduce conflict (shift 32, reduce 25) on IS
+66: shift/reduce conflict (shift 33, reduce 25) on IN
+66: shift/reduce conflict (shift 34, reduce 25) on PLUS
+66: shift/reduce conflict (shift 35, reduce 25) on MINUS
+66: shift/reduce conflict (shift 36, reduce 25) on LESS
+66: shift/reduce conflict (shift 37, reduce 25) on GREATER
+66: shift/reduce conflict (shift 38, reduce 25) on LEQ
+66: shift/reduce conflict (shift 39, reduce 25) on GEQ
+66: shift/reduce conflict (shift 40, reduce 25) on NEQ
+66: shift/reduce conflict (shift 41, reduce 25) on MOD
+66: shift/reduce conflict (shift 42, reduce 25) on INTDIV
+66: shift/reduce conflict (shift 43, reduce 25) on DIV
+66: shift/reduce conflict (shift 44, reduce 25) on STAR
+66: shift/reduce conflict (shift 45, reduce 25) on STARSTAR
+66: shift/reduce conflict (shift 46, reduce 25) on AND
+66: shift/reduce conflict (shift 47, reduce 25) on OR
+state 66
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp AND exp .  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 25
+	EOF  reduce 25
+	NEWLINE  reduce 25
+
+
+67: shift/reduce conflict (shift 31, reduce 26) on EQUALS
+67: shift/reduce conflict (shift 32, reduce 26) on IS
+67: shift/reduce conflict (shift 33, reduce 26) on IN
+67: shift/reduce conflict (shift 34, reduce 26) on PLUS
+67: shift/reduce conflict (shift 35, reduce 26) on MINUS
+67: shift/reduce conflict (shift 36, reduce 26) on LESS
+67: shift/reduce conflict (shift 37, reduce 26) on GREATER
+67: shift/reduce conflict (shift 38, reduce 26) on LEQ
+67: shift/reduce conflict (shift 39, reduce 26) on GEQ
+67: shift/reduce conflict (shift 40, reduce 26) on NEQ
+67: shift/reduce conflict (shift 41, reduce 26) on MOD
+67: shift/reduce conflict (shift 42, reduce 26) on INTDIV
+67: shift/reduce conflict (shift 43, reduce 26) on DIV
+67: shift/reduce conflict (shift 44, reduce 26) on STAR
+67: shift/reduce conflict (shift 45, reduce 26) on STARSTAR
+67: shift/reduce conflict (shift 46, reduce 26) on AND
+67: shift/reduce conflict (shift 47, reduce 26) on OR
+state 67
+	bexp : exp . PLUS exp  (22)
+	bexp : exp . LESS exp  (23)
+	bexp : exp . GREATER exp  (24)
+	bexp : exp . AND exp  (25)
+	bexp : exp . OR exp  (26)
+	bexp : exp OR exp .  (26)
+	bexp : exp . EQUALS exp  (27)
+	bexp : exp . STAR exp  (28)
+	bexp : exp . MINUS exp  (29)
+	bexp : exp . DIV exp  (30)
+	bexp : exp . MOD exp  (31)
+	bexp : exp . STARSTAR exp  (32)
+	bexp : exp . INTDIV exp  (33)
+	bexp : exp . LEQ exp  (34)
+	bexp : exp . GEQ exp  (35)
+	bexp : exp . IS exp  (36)
+	bexp : exp . IN exp  (37)
+	bexp : exp . NEQ exp  (38)
+
+	EQUALS  shift 31
+	IS  shift 32
+	IN  shift 33
+	PLUS  shift 34
+	MINUS  shift 35
+	LESS  shift 36
+	GREATER  shift 37
+	LEQ  shift 38
+	GEQ  shift 39
+	NEQ  shift 40
+	MOD  shift 41
+	INTDIV  shift 42
+	DIV  shift 43
+	STAR  shift 44
+	STARSTAR  shift 45
+	AND  shift 46
+	OR  shift 47
+	RPAREN  reduce 26
+	EOF  reduce 26
+	NEWLINE  reduce 26
+
+
+state 68
+	declist : TNAME . VAR  (8)
+	declist : TNAME . VAR COMMA declist  (9)
+
+	VAR  shift 72
+	.  error
+
+
+state 69
 	declwrapper : LPAREN RPAREN .  (7)
 
 	.  reduce 7
 
 
-state 35
+state 70
 	declwrapper : LPAREN declist . RPAREN  (6)
 
-	RPAREN  shift 38
+	RPAREN  shift 73
 	.  error
 
 
-state 36
+state 71
 	fndef : DEF VAR declwrapper ARROW . TNAME COLON NEWLINE block  (5)
 
-	TNAME  shift 39
+	TNAME  shift 74
 	.  error
 
 
-state 37
+state 72
 	declist : TNAME VAR .  (8)
 	declist : TNAME VAR . COMMA declist  (9)
 
-	COMMA  shift 40
+	COMMA  shift 75
 	RPAREN  reduce 8
 
 
-state 38
+state 73
 	declwrapper : LPAREN declist RPAREN .  (6)
 
 	.  reduce 6
 
 
-state 39
+state 74
 	fndef : DEF VAR declwrapper ARROW TNAME . COLON NEWLINE block  (5)
 
-	COLON  shift 41
+	COLON  shift 76
 	.  error
 
 
-state 40
+state 75
 	declist : TNAME VAR COMMA . declist  (9)
 
-	TNAME  shift 33
+	TNAME  shift 68
 	.  error
 
-	declist  goto 42
+	declist  goto 77
 
 
-state 41
+state 76
 	fndef : DEF VAR declwrapper ARROW TNAME COLON . NEWLINE block  (5)
 
-	NEWLINE  shift 43
+	NEWLINE  shift 78
 	.  error
 
 
-state 42
+state 77
 	declist : TNAME VAR COMMA declist .  (9)
 
 	.  reduce 9
 
 
-state 43
+state 78
 	fndef : DEF VAR declwrapper ARROW TNAME COLON NEWLINE . block  (5)
 
 	VAR  shift 3
@@ -392,7 +1752,7 @@ state 43
 	RETURN  shift 7
 	.  error
 
-	block  goto 44
+	block  goto 79
 	blockl  goto 10
 	stmt  goto 11
 	fndef  goto 12
@@ -400,14 +1760,30 @@ state 43
 	decl  goto 14
 
 
-state 44
+state 79
 	fndef : DEF VAR declwrapper ARROW TNAME COLON NEWLINE block .  (5)
 
 	.  reduce 5
 
 
-State 32 contains 1 shift/reduce conflict.
+State 51 contains 17 shift/reduce conflicts.
+State 52 contains 17 shift/reduce conflicts.
+State 53 contains 17 shift/reduce conflicts.
+State 54 contains 17 shift/reduce conflicts.
+State 55 contains 17 shift/reduce conflicts.
+State 56 contains 17 shift/reduce conflicts.
+State 57 contains 17 shift/reduce conflicts.
+State 58 contains 17 shift/reduce conflicts.
+State 59 contains 17 shift/reduce conflicts.
+State 60 contains 17 shift/reduce conflicts.
+State 61 contains 17 shift/reduce conflicts.
+State 62 contains 17 shift/reduce conflicts.
+State 63 contains 17 shift/reduce conflicts.
+State 64 contains 17 shift/reduce conflicts.
+State 65 contains 17 shift/reduce conflicts.
+State 66 contains 17 shift/reduce conflicts.
+State 67 contains 17 shift/reduce conflicts.
 
 
 43 terminals, 13 nonterminals
-23 grammar rules, 45 states
+40 grammar rules, 80 states

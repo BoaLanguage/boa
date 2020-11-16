@@ -35,6 +35,7 @@ rule token = parse
 | "**"             { STARSTAR }
 | "//"             { INTDIV }
 | "!="             { NEQ }
+| "/"              { DIV }
 | "in"             { IN }
 | "*"              { STAR }
 | "True"           { BOOL(true) }

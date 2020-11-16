@@ -8,7 +8,7 @@ exception Err
 # 9 "lexer.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base =
-   "\000\000\214\255\215\255\216\255\217\255\075\000\085\000\111\000\
+   "\000\000\213\255\214\255\215\255\216\255\075\000\085\000\111\000\
     \186\000\212\000\031\001\057\001\132\001\158\001\233\001\002\000\
     \017\000\050\000\235\255\236\255\033\000\034\000\242\255\003\002\
     \078\002\035\000\104\002\081\000\249\255\250\255\251\255\252\255\
@@ -19,16 +19,16 @@ let __ocaml_lex_tables = {
     \010\007\036\007\111\007\137\007\212\007\238\007\057\008\083\008\
     \158\008\184\008";
   Lexing.lex_backtrk =
-   "\255\255\255\255\255\255\255\255\255\255\037\000\036\000\035\000\
-    \035\000\035\000\035\000\035\000\035\000\036\000\036\000\041\000\
-    \041\000\025\000\255\255\255\255\016\000\015\000\255\255\035\000\
-    \035\000\010\000\035\000\014\000\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\035\000\035\000\035\000\035\000\
-    \008\000\255\255\035\000\011\000\028\000\024\000\012\000\255\255\
-    \255\255\255\255\255\255\255\255\036\000\036\000\026\000\036\000\
-    \036\000\036\000\027\000\035\000\035\000\035\000\029\000\030\000\
-    \035\000\031\000\032\000\035\000\033\000\035\000\035\000\035\000\
-    \035\000\034\000";
+   "\255\255\255\255\255\255\255\255\255\255\038\000\037\000\036\000\
+    \036\000\036\000\036\000\036\000\036\000\037\000\037\000\042\000\
+    \024\000\026\000\255\255\255\255\016\000\015\000\255\255\036\000\
+    \036\000\010\000\036\000\014\000\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\036\000\036\000\036\000\036\000\
+    \008\000\255\255\036\000\011\000\029\000\025\000\012\000\255\255\
+    \255\255\255\255\255\255\255\255\037\000\037\000\027\000\037\000\
+    \037\000\037\000\028\000\036\000\036\000\036\000\030\000\031\000\
+    \036\000\032\000\033\000\036\000\034\000\036\000\036\000\036\000\
+    \036\000\035\000";
   Lexing.lex_default =
    "\001\000\000\000\000\000\000\000\000\000\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
@@ -806,118 +806,123 @@ and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
 
   | 24 ->
 # 38 "lexer.mll"
-                   ( IN )
+                   ( DIV )
 # 811 "lexer.ml"
 
   | 25 ->
 # 39 "lexer.mll"
-                   ( STAR )
+                   ( IN )
 # 816 "lexer.ml"
 
   | 26 ->
 # 40 "lexer.mll"
-                   ( BOOL(true) )
+                   ( STAR )
 # 821 "lexer.ml"
 
   | 27 ->
 # 41 "lexer.mll"
-                   ( BOOL(false) )
+                   ( BOOL(true) )
 # 826 "lexer.ml"
 
   | 28 ->
 # 42 "lexer.mll"
-                   ( IF )
+                   ( BOOL(false) )
 # 831 "lexer.ml"
 
   | 29 ->
 # 43 "lexer.mll"
-                   ( ELSE )
+                   ( IF )
 # 836 "lexer.ml"
 
   | 30 ->
 # 44 "lexer.mll"
-                   ( ELIF )
+                   ( ELSE )
 # 841 "lexer.ml"
 
   | 31 ->
 # 45 "lexer.mll"
-                   ( AND )
+                   ( ELIF )
 # 846 "lexer.ml"
 
   | 32 ->
 # 46 "lexer.mll"
-                   ( OR )
+                   ( AND )
 # 851 "lexer.ml"
 
   | 33 ->
 # 47 "lexer.mll"
-                   ( NOT )
+                   ( OR )
 # 856 "lexer.ml"
 
   | 34 ->
 # 48 "lexer.mll"
-                   ( RETURN )
+                   ( NOT )
 # 861 "lexer.ml"
 
   | 35 ->
-let
 # 49 "lexer.mll"
-        v
-# 867 "lexer.ml"
-= Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 49 "lexer.mll"
-                   ( VAR(v) )
-# 871 "lexer.ml"
+                   ( RETURN )
+# 866 "lexer.ml"
 
   | 36 ->
 let
 # 50 "lexer.mll"
-           i
-# 877 "lexer.ml"
+        v
+# 872 "lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
 # 50 "lexer.mll"
-                   ( TNAME(i) )
-# 881 "lexer.ml"
+                   ( VAR(v) )
+# 876 "lexer.ml"
 
   | 37 ->
 let
 # 51 "lexer.mll"
-            n
-# 887 "lexer.ml"
+           i
+# 882 "lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
 # 51 "lexer.mll"
-                   ( INT(int_of_string n) )
-# 891 "lexer.ml"
+                   ( TNAME(i) )
+# 886 "lexer.ml"
 
   | 38 ->
+let
 # 52 "lexer.mll"
-                   ( LBRACK )
+            n
+# 892 "lexer.ml"
+= Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
+# 52 "lexer.mll"
+                   ( INT(int_of_string n) )
 # 896 "lexer.ml"
 
   | 39 ->
 # 53 "lexer.mll"
-                   ( RBRACK )
+                   ( LBRACK )
 # 901 "lexer.ml"
 
   | 40 ->
 # 54 "lexer.mll"
-                   ( EOF )
+                   ( RBRACK )
 # 906 "lexer.ml"
 
   | 41 ->
+# 55 "lexer.mll"
+                   ( EOF )
+# 911 "lexer.ml"
+
+  | 42 ->
 let
-# 56 "lexer.mll"
+# 57 "lexer.mll"
        c
-# 912 "lexer.ml"
+# 917 "lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 56 "lexer.mll"
+# 57 "lexer.mll"
           (
             let pos = lexbuf.Lexing.lex_curr_p in
             printf "Error at line %d\n" pos.Lexing.pos_lnum;
             printf "Unrecognized character: [%c]\n" c;
             exit 1
           )
-# 921 "lexer.ml"
+# 926 "lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_token_rec lexbuf __ocaml_lex_state
