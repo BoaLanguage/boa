@@ -3,13 +3,21 @@ open Ast
 (* Values include *closures*, which are functions including their environments
    at "definition time." We also have "lazy" values, which let us delay the
    evaluation of expressions to support recursion. *)
-type value =
+(* type value =
   | Closure of var * typ * stmt * store
   | VInt of int
   | VBool of bool
   | VTuple of value list
   | VList of typ * value list
-  | VLazy of exp * store
+  | VLazy of exp * store *)
+type value = 
+  | VInt of int
+  | VString of string
+  | VBool of bool
+  | Closure of var * stmt * store
+  | VDict of (value * value) list
+  | VTuple of (value * value)
+  | VList of value list
 and store = (var * value) list
 
 (* Interpreter exceptions. *)
@@ -37,30 +45,24 @@ let rec lookup s x : value =
     if x = y then u
     else (lookup t x)
 
-(* Evaluate an expression using an environment for free variables. *)
-let rec eval' (e : exp) (s : store) : value =
-  let v = match e with
-    | _ -> failwith "Goobyer"
-  in
-  (* "Force" lazy values when they are the result of a computation. *)
+let int_of_value (v : value) : int =
   match v with
-  | VLazy (e, s) -> eval' e s
-  | _ -> v
+  | VInt i -> i
+  | _ ->  failwith "BIG PROBLEM"
 
-(* Turn values back into expressions (useful for pretty printing). *)
-let rec expr_of_value v =
-  match v with
-  (* | Closure (x, t, e, s) -> Lam (x, t, e) *)
-  (* | VInt i -> Int i
-  | VBool b -> if b then Bool(true) else Bool(false)
-  | VTuple vs -> Tuple (List.map expr_of_value vs)
-  | VLazy (e, s) -> e *)
-  | _ -> failwith "Gooby"
+let evalb (b : binop) (l : value) (r : value) : value = 
+  match b with
+  | Plus -> VInt((int_of_value l) + (int_of_value r))
+  | _ -> failwith "yo"
 
 (* Evaluate a closed expression to an expression. *)
-let evale (e : exp) : exp =
-  let v = eval' e [] in
-  expr_of_value v
+let rec evale (e : exp) (s : store) : value =
+  match e with
+  | Var v -> lookup s v
+  | AttrAccess (e, v) -> failwith "not sure"
+  | SliceAccess (e1, e2) -> failwith "idk"
+  | Binary (bin, e1, e2) -> evalb bin (evale e1 s) (evale e2 s)
+  | _ -> failwith "not implemented expression"
 
 let evals (s : stmt) (sigma : store) : store =
   match s with
