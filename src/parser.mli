@@ -28,6 +28,7 @@ type token =
   | MOD
   | INTDIV
   | DIV
+  | RETURN
   | STAR
   | STARSTAR
   | IF
@@ -37,6 +38,7 @@ type token =
   | OR
   | NOT
   | SEMICOLON
+  | NEWLINE
 
 val prog :
   (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Ast.stmt

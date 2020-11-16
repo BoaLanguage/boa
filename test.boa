@@ -1,8 +1,9 @@
-def Int name(Int x, Int y): 
-  Int x;
-  Int y;
-  x = 5315;
-  def Bool b():
-    String s;
-  ;
-;
+Bool b
+def name(Int x, Int y) -> Int: 
+  Int x
+  Int y
+  x = 5315 + 4 + y
+  return y
+  def b() -> Bool:
+    String s
+    return 53 + 2

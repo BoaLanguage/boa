@@ -12,7 +12,7 @@ let ws = [' ' '\t']
 
 rule token = parse
 | ws               { token lexbuf }
-| '\n'             { Lexing.new_line lexbuf; token lexbuf }
+| '\n'             { NEWLINE }
 | "("              { LPAREN }
 | ")"              { RPAREN }
 | "."              { DOT }
@@ -45,6 +45,7 @@ rule token = parse
 | "and"            { AND }
 | "or"             { OR }
 | "not"            { NOT }
+| "return"         { RETURN }
 | id as v          { VAR(v) }
 | bigid as i       { TNAME(i) }
 | digit+ as n      { INT(int_of_string n) }

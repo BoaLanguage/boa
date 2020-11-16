@@ -7,7 +7,7 @@
    3  blockl : stmt
    4         | stmt blockl
 
-   5  fndef : DEF TNAME VAR declwrapper COLON block
+   5  fndef : DEF VAR declwrapper ARROW TNAME COLON NEWLINE block
 
    6  declwrapper : LPAREN declist RPAREN
    7              | LPAREN RPAREN
@@ -15,18 +15,24 @@
    8  declist : TNAME VAR
    9          | TNAME VAR COMMA declist
 
-  10  stmt : istmt SEMICOLON
+  10  stmt : istmt NEWLINE
+  11       | istmt EOF
 
-  11  istmt : LPAREN exp RPAREN
-  12        | VAR EQUALS exp
-  13        | decl
-  14        | fndef
+  12  istmt : LPAREN exp RPAREN
+  13        | VAR EQUALS exp
+  14        | decl
+  15        | fndef
+  16        | RETURN exp
 
-  15  decl : TNAME VAR
+  17  decl : TNAME VAR
 
-  16  exp : INT
+  18  exp : INT
+  19      | VAR
+  20      | bexp
 
-  17  %entry% : '\001' prog
+  21  bexp : exp PLUS exp
+
+  22  %entry% : '\001' prog
 
 state 0
 	$accept : . %entry% $end  (0)
@@ -38,21 +44,22 @@ state 0
 
 
 state 1
-	%entry% : '\001' . prog  (17)
+	%entry% : '\001' . prog  (22)
 
 	VAR  shift 3
 	TNAME  shift 4
 	LPAREN  shift 5
 	DEF  shift 6
+	RETURN  shift 7
 	.  error
 
-	prog  goto 7
-	block  goto 8
-	blockl  goto 9
-	stmt  goto 10
-	fndef  goto 11
-	istmt  goto 12
-	decl  goto 13
+	prog  goto 8
+	block  goto 9
+	blockl  goto 10
+	stmt  goto 11
+	fndef  goto 12
+	istmt  goto 13
+	decl  goto 14
 
 
 state 2
@@ -62,55 +69,68 @@ state 2
 
 
 state 3
-	istmt : VAR . EQUALS exp  (12)
+	istmt : VAR . EQUALS exp  (13)
 
-	EQUALS  shift 14
+	EQUALS  shift 15
 	.  error
 
 
 state 4
-	decl : TNAME . VAR  (15)
+	decl : TNAME . VAR  (17)
 
-	VAR  shift 15
+	VAR  shift 16
 	.  error
 
 
 state 5
-	istmt : LPAREN . exp RPAREN  (11)
+	istmt : LPAREN . exp RPAREN  (12)
 
-	INT  shift 16
+	VAR  shift 17
+	INT  shift 18
 	.  error
 
-	exp  goto 17
+	exp  goto 19
+	bexp  goto 20
 
 
 state 6
-	fndef : DEF . TNAME VAR declwrapper COLON block  (5)
+	fndef : DEF . VAR declwrapper ARROW TNAME COLON NEWLINE block  (5)
 
-	TNAME  shift 18
+	VAR  shift 21
 	.  error
 
 
 state 7
-	%entry% : '\001' prog .  (17)
+	istmt : RETURN . exp  (16)
 
-	.  reduce 17
+	VAR  shift 17
+	INT  shift 18
+	.  error
+
+	exp  goto 22
+	bexp  goto 20
 
 
 state 8
-	prog : block . EOF  (1)
+	%entry% : '\001' prog .  (22)
 
-	EOF  shift 19
-	.  error
+	.  reduce 22
 
 
 state 9
+	prog : block . EOF  (1)
+
+	EOF  shift 23
+	.  error
+
+
+state 10
 	block : blockl .  (2)
 
 	.  reduce 2
 
 
-state 10
+state 11
 	blockl : stmt .  (3)
 	blockl : stmt . blockl  (4)
 
@@ -118,199 +138,276 @@ state 10
 	TNAME  shift 4
 	LPAREN  shift 5
 	DEF  shift 6
+	RETURN  shift 7
 	EOF  reduce 3
-	SEMICOLON  reduce 3
+	NEWLINE  reduce 3
 
-	blockl  goto 20
-	stmt  goto 10
-	fndef  goto 11
-	istmt  goto 12
-	decl  goto 13
-
-
-state 11
-	istmt : fndef .  (14)
-
-	.  reduce 14
+	blockl  goto 24
+	stmt  goto 11
+	fndef  goto 12
+	istmt  goto 13
+	decl  goto 14
 
 
 state 12
-	stmt : istmt . SEMICOLON  (10)
-
-	SEMICOLON  shift 21
-	.  error
-
-
-state 13
-	istmt : decl .  (13)
-
-	.  reduce 13
-
-
-state 14
-	istmt : VAR EQUALS . exp  (12)
-
-	INT  shift 16
-	.  error
-
-	exp  goto 22
-
-
-state 15
-	decl : TNAME VAR .  (15)
+	istmt : fndef .  (15)
 
 	.  reduce 15
 
 
-state 16
-	exp : INT .  (16)
+state 13
+	stmt : istmt . NEWLINE  (10)
+	stmt : istmt . EOF  (11)
 
-	.  reduce 16
+	EOF  shift 25
+	NEWLINE  shift 26
+	.  error
+
+
+state 14
+	istmt : decl .  (14)
+
+	.  reduce 14
+
+
+state 15
+	istmt : VAR EQUALS . exp  (13)
+
+	VAR  shift 17
+	INT  shift 18
+	.  error
+
+	exp  goto 27
+	bexp  goto 20
+
+
+state 16
+	decl : TNAME VAR .  (17)
+
+	.  reduce 17
 
 
 state 17
-	istmt : LPAREN exp . RPAREN  (11)
+	exp : VAR .  (19)
 
-	RPAREN  shift 23
-	.  error
+	.  reduce 19
 
 
 state 18
-	fndef : DEF TNAME . VAR declwrapper COLON block  (5)
+	exp : INT .  (18)
 
-	VAR  shift 24
-	.  error
+	.  reduce 18
 
 
 state 19
+	istmt : LPAREN exp . RPAREN  (12)
+	bexp : exp . PLUS exp  (21)
+
+	RPAREN  shift 28
+	PLUS  shift 29
+	.  error
+
+
+state 20
+	exp : bexp .  (20)
+
+	.  reduce 20
+
+
+state 21
+	fndef : DEF VAR . declwrapper ARROW TNAME COLON NEWLINE block  (5)
+
+	LPAREN  shift 30
+	.  error
+
+	declwrapper  goto 31
+
+
+state 22
+	istmt : RETURN exp .  (16)
+	bexp : exp . PLUS exp  (21)
+
+	PLUS  shift 29
+	EOF  reduce 16
+	NEWLINE  reduce 16
+
+
+state 23
 	prog : block EOF .  (1)
 
 	.  reduce 1
 
 
-state 20
+state 24
 	blockl : stmt blockl .  (4)
 
 	.  reduce 4
 
 
-state 21
-	stmt : istmt SEMICOLON .  (10)
-
-	.  reduce 10
-
-
-state 22
-	istmt : VAR EQUALS exp .  (12)
-
-	.  reduce 12
-
-
-state 23
-	istmt : LPAREN exp RPAREN .  (11)
+state 25
+	stmt : istmt EOF .  (11)
 
 	.  reduce 11
 
 
-state 24
-	fndef : DEF TNAME VAR . declwrapper COLON block  (5)
-
-	LPAREN  shift 25
-	.  error
-
-	declwrapper  goto 26
-
-
-state 25
-	declwrapper : LPAREN . declist RPAREN  (6)
-	declwrapper : LPAREN . RPAREN  (7)
-
-	TNAME  shift 27
-	RPAREN  shift 28
-	.  error
-
-	declist  goto 29
-
-
 state 26
-	fndef : DEF TNAME VAR declwrapper . COLON block  (5)
+	stmt : istmt NEWLINE .  (10)
 
-	COLON  shift 30
-	.  error
+	.  reduce 10
 
 
 state 27
-	declist : TNAME . VAR  (8)
-	declist : TNAME . VAR COMMA declist  (9)
+	istmt : VAR EQUALS exp .  (13)
+	bexp : exp . PLUS exp  (21)
 
-	VAR  shift 31
-	.  error
+	PLUS  shift 29
+	EOF  reduce 13
+	NEWLINE  reduce 13
 
 
 state 28
-	declwrapper : LPAREN RPAREN .  (7)
+	istmt : LPAREN exp RPAREN .  (12)
 
-	.  reduce 7
+	.  reduce 12
 
 
 state 29
-	declwrapper : LPAREN declist . RPAREN  (6)
+	bexp : exp PLUS . exp  (21)
 
-	RPAREN  shift 32
+	VAR  shift 17
+	INT  shift 18
 	.  error
+
+	exp  goto 32
+	bexp  goto 20
 
 
 state 30
-	fndef : DEF TNAME VAR declwrapper COLON . block  (5)
+	declwrapper : LPAREN . declist RPAREN  (6)
+	declwrapper : LPAREN . RPAREN  (7)
 
-	VAR  shift 3
-	TNAME  shift 4
-	LPAREN  shift 5
-	DEF  shift 6
-	.  error
-
-	block  goto 33
-	blockl  goto 9
-	stmt  goto 10
-	fndef  goto 11
-	istmt  goto 12
-	decl  goto 13
-
-
-state 31
-	declist : TNAME VAR .  (8)
-	declist : TNAME VAR . COMMA declist  (9)
-
-	COMMA  shift 34
-	RPAREN  reduce 8
-
-
-state 32
-	declwrapper : LPAREN declist RPAREN .  (6)
-
-	.  reduce 6
-
-
-state 33
-	fndef : DEF TNAME VAR declwrapper COLON block .  (5)
-
-	.  reduce 5
-
-
-state 34
-	declist : TNAME VAR COMMA . declist  (9)
-
-	TNAME  shift 27
+	TNAME  shift 33
+	RPAREN  shift 34
 	.  error
 
 	declist  goto 35
 
 
+state 31
+	fndef : DEF VAR declwrapper . ARROW TNAME COLON NEWLINE block  (5)
+
+	ARROW  shift 36
+	.  error
+
+
+32: shift/reduce conflict (shift 29, reduce 21) on PLUS
+state 32
+	bexp : exp . PLUS exp  (21)
+	bexp : exp PLUS exp .  (21)
+
+	PLUS  shift 29
+	RPAREN  reduce 21
+	EOF  reduce 21
+	NEWLINE  reduce 21
+
+
+state 33
+	declist : TNAME . VAR  (8)
+	declist : TNAME . VAR COMMA declist  (9)
+
+	VAR  shift 37
+	.  error
+
+
+state 34
+	declwrapper : LPAREN RPAREN .  (7)
+
+	.  reduce 7
+
+
 state 35
+	declwrapper : LPAREN declist . RPAREN  (6)
+
+	RPAREN  shift 38
+	.  error
+
+
+state 36
+	fndef : DEF VAR declwrapper ARROW . TNAME COLON NEWLINE block  (5)
+
+	TNAME  shift 39
+	.  error
+
+
+state 37
+	declist : TNAME VAR .  (8)
+	declist : TNAME VAR . COMMA declist  (9)
+
+	COMMA  shift 40
+	RPAREN  reduce 8
+
+
+state 38
+	declwrapper : LPAREN declist RPAREN .  (6)
+
+	.  reduce 6
+
+
+state 39
+	fndef : DEF VAR declwrapper ARROW TNAME . COLON NEWLINE block  (5)
+
+	COLON  shift 41
+	.  error
+
+
+state 40
+	declist : TNAME VAR COMMA . declist  (9)
+
+	TNAME  shift 33
+	.  error
+
+	declist  goto 42
+
+
+state 41
+	fndef : DEF VAR declwrapper ARROW TNAME COLON . NEWLINE block  (5)
+
+	NEWLINE  shift 43
+	.  error
+
+
+state 42
 	declist : TNAME VAR COMMA declist .  (9)
 
 	.  reduce 9
 
 
-41 terminals, 12 nonterminals
-18 grammar rules, 36 states
+state 43
+	fndef : DEF VAR declwrapper ARROW TNAME COLON NEWLINE . block  (5)
+
+	VAR  shift 3
+	TNAME  shift 4
+	LPAREN  shift 5
+	DEF  shift 6
+	RETURN  shift 7
+	.  error
+
+	block  goto 44
+	blockl  goto 10
+	stmt  goto 11
+	fndef  goto 12
+	istmt  goto 13
+	decl  goto 14
+
+
+state 44
+	fndef : DEF VAR declwrapper ARROW TNAME COLON NEWLINE block .  (5)
+
+	.  reduce 5
+
+
+State 32 contains 1 shift/reduce conflict.
+
+
+43 terminals, 13 nonterminals
+23 grammar rules, 45 states
