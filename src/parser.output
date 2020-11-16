@@ -1,10 +1,32 @@
    0  $accept : %entry% $end
 
-   1  prog : stmt EOF
+   1  prog : block EOF
 
-   2  stmt : LPAREN INT RPAREN
+   2  block : blockl
 
-   3  %entry% : '\001' prog
+   3  blockl : stmt
+   4         | stmt blockl
+
+   5  fndef : DEF TNAME VAR declwrapper COLON block
+
+   6  declwrapper : LPAREN declist RPAREN
+   7              | LPAREN RPAREN
+
+   8  declist : TNAME VAR
+   9          | TNAME VAR COMMA declist
+
+  10  stmt : istmt SEMICOLON
+
+  11  istmt : LPAREN exp RPAREN
+  12        | VAR EQUALS exp
+  13        | decl
+  14        | fndef
+
+  15  decl : TNAME VAR
+
+  16  exp : INT
+
+  17  %entry% : '\001' prog
 
 state 0
 	$accept : . %entry% $end  (0)
@@ -16,13 +38,21 @@ state 0
 
 
 state 1
-	%entry% : '\001' . prog  (3)
+	%entry% : '\001' . prog  (17)
 
-	LPAREN  shift 3
+	VAR  shift 3
+	TNAME  shift 4
+	LPAREN  shift 5
+	DEF  shift 6
 	.  error
 
-	prog  goto 4
-	stmt  goto 5
+	prog  goto 7
+	block  goto 8
+	blockl  goto 9
+	stmt  goto 10
+	fndef  goto 11
+	istmt  goto 12
+	decl  goto 13
 
 
 state 2
@@ -32,43 +62,255 @@ state 2
 
 
 state 3
-	stmt : LPAREN . INT RPAREN  (2)
+	istmt : VAR . EQUALS exp  (12)
 
-	INT  shift 6
+	EQUALS  shift 14
 	.  error
 
 
 state 4
-	%entry% : '\001' prog .  (3)
+	decl : TNAME . VAR  (15)
 
-	.  reduce 3
-
-
-state 5
-	prog : stmt . EOF  (1)
-
-	EOF  shift 7
+	VAR  shift 15
 	.  error
 
 
-state 6
-	stmt : LPAREN INT . RPAREN  (2)
+state 5
+	istmt : LPAREN . exp RPAREN  (11)
 
-	RPAREN  shift 8
+	INT  shift 16
+	.  error
+
+	exp  goto 17
+
+
+state 6
+	fndef : DEF . TNAME VAR declwrapper COLON block  (5)
+
+	TNAME  shift 18
 	.  error
 
 
 state 7
-	prog : stmt EOF .  (1)
+	%entry% : '\001' prog .  (17)
 
-	.  reduce 1
+	.  reduce 17
 
 
 state 8
-	stmt : LPAREN INT RPAREN .  (2)
+	prog : block . EOF  (1)
+
+	EOF  shift 19
+	.  error
+
+
+state 9
+	block : blockl .  (2)
 
 	.  reduce 2
 
 
-40 terminals, 4 nonterminals
-4 grammar rules, 9 states
+state 10
+	blockl : stmt .  (3)
+	blockl : stmt . blockl  (4)
+
+	VAR  shift 3
+	TNAME  shift 4
+	LPAREN  shift 5
+	DEF  shift 6
+	EOF  reduce 3
+	SEMICOLON  reduce 3
+
+	blockl  goto 20
+	stmt  goto 10
+	fndef  goto 11
+	istmt  goto 12
+	decl  goto 13
+
+
+state 11
+	istmt : fndef .  (14)
+
+	.  reduce 14
+
+
+state 12
+	stmt : istmt . SEMICOLON  (10)
+
+	SEMICOLON  shift 21
+	.  error
+
+
+state 13
+	istmt : decl .  (13)
+
+	.  reduce 13
+
+
+state 14
+	istmt : VAR EQUALS . exp  (12)
+
+	INT  shift 16
+	.  error
+
+	exp  goto 22
+
+
+state 15
+	decl : TNAME VAR .  (15)
+
+	.  reduce 15
+
+
+state 16
+	exp : INT .  (16)
+
+	.  reduce 16
+
+
+state 17
+	istmt : LPAREN exp . RPAREN  (11)
+
+	RPAREN  shift 23
+	.  error
+
+
+state 18
+	fndef : DEF TNAME . VAR declwrapper COLON block  (5)
+
+	VAR  shift 24
+	.  error
+
+
+state 19
+	prog : block EOF .  (1)
+
+	.  reduce 1
+
+
+state 20
+	blockl : stmt blockl .  (4)
+
+	.  reduce 4
+
+
+state 21
+	stmt : istmt SEMICOLON .  (10)
+
+	.  reduce 10
+
+
+state 22
+	istmt : VAR EQUALS exp .  (12)
+
+	.  reduce 12
+
+
+state 23
+	istmt : LPAREN exp RPAREN .  (11)
+
+	.  reduce 11
+
+
+state 24
+	fndef : DEF TNAME VAR . declwrapper COLON block  (5)
+
+	LPAREN  shift 25
+	.  error
+
+	declwrapper  goto 26
+
+
+state 25
+	declwrapper : LPAREN . declist RPAREN  (6)
+	declwrapper : LPAREN . RPAREN  (7)
+
+	TNAME  shift 27
+	RPAREN  shift 28
+	.  error
+
+	declist  goto 29
+
+
+state 26
+	fndef : DEF TNAME VAR declwrapper . COLON block  (5)
+
+	COLON  shift 30
+	.  error
+
+
+state 27
+	declist : TNAME . VAR  (8)
+	declist : TNAME . VAR COMMA declist  (9)
+
+	VAR  shift 31
+	.  error
+
+
+state 28
+	declwrapper : LPAREN RPAREN .  (7)
+
+	.  reduce 7
+
+
+state 29
+	declwrapper : LPAREN declist . RPAREN  (6)
+
+	RPAREN  shift 32
+	.  error
+
+
+state 30
+	fndef : DEF TNAME VAR declwrapper COLON . block  (5)
+
+	VAR  shift 3
+	TNAME  shift 4
+	LPAREN  shift 5
+	DEF  shift 6
+	.  error
+
+	block  goto 33
+	blockl  goto 9
+	stmt  goto 10
+	fndef  goto 11
+	istmt  goto 12
+	decl  goto 13
+
+
+state 31
+	declist : TNAME VAR .  (8)
+	declist : TNAME VAR . COMMA declist  (9)
+
+	COMMA  shift 34
+	RPAREN  reduce 8
+
+
+state 32
+	declwrapper : LPAREN declist RPAREN .  (6)
+
+	.  reduce 6
+
+
+state 33
+	fndef : DEF TNAME VAR declwrapper COLON block .  (5)
+
+	.  reduce 5
+
+
+state 34
+	declist : TNAME VAR COMMA . declist  (9)
+
+	TNAME  shift 27
+	.  error
+
+	declist  goto 35
+
+
+state 35
+	declist : TNAME VAR COMMA declist .  (9)
+
+	.  reduce 9
+
+
+41 terminals, 12 nonterminals
+18 grammar rules, 36 states

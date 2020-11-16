@@ -36,6 +36,7 @@ type token =
   | AND
   | OR
   | NOT
+  | SEMICOLON
 
 val prog :
   (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> Ast.stmt

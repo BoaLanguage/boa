@@ -1,0 +1,8 @@
+def Int name(Int x, Int y): 
+  Int x;
+  Int y;
+  x = 5315;
+  def Bool b():
+    String s;
+  ;
+;
