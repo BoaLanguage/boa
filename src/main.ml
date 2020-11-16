@@ -55,12 +55,12 @@ let () =
     Format.printf "Evaluating the expression...@\n@\n";
     Format.print_flush () in
 
-  let v = Eval.evals e [] in
+  let v = Eval.evals (Eval.make_configuration e) in
 
   (* (6) Pretty-print the final value. *)
   let _ =
     Format.printf "Result:@\n  @[";
-    Eval.print_store v;
+    (* Eval.print_store v; *)
     Format.printf "@]@\n";
     Format.printf "@]" in
   ()
