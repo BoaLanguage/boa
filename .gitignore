@@ -3,3 +3,5 @@ src/*.cmo
 src/parser.ml
 src/parser.output
 src/lexer.ml
+src/*.mli
+src/boa
