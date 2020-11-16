@@ -100,8 +100,10 @@ let print_value (v : value) =
 let rec print_store (s : store) =
   List.iter (fun (var, v) -> Format.printf "%s: " var; print_value v) s; ()
 
-let evals (s : stmt) (sigma : store) : store =
+let rec evals (s : stmt) (sigma : store) : store =
   match s with
+  | Block [] -> sigma
+  | Block (a::b) -> evals (Block(b)) (evals a sigma)
   | Exp e -> [("shit", evale e sigma)]
   | Print e -> ignore (print_value (evale e sigma)); sigma
-  | _ -> sigma
+  | _ -> Format.printf "%s" "Hey"; []

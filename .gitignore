@@ -1,0 +1,5 @@
+src/*.cmi
+src/*.cmo
+src/parser.ml
+src/parser.output
+src/lexer.ml

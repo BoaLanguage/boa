@@ -6,8 +6,8 @@ exception Err
 }
 
 let digit = ['0'-'9']
-let id = ['a'-'z'] ['a'-'z' '0'-'9']*
-let bigid = ['A'-'Z'] ['a'-'z' '0'-'9']*
+let id = ['a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9']*
+let bigid = ['A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9']*
 let ws = [' ' '\t']
 
 rule token = parse
@@ -47,6 +47,7 @@ rule token = parse
 | "or"             { OR }
 | "not"            { NOT }
 | "return"         { RETURN }
+| "print"          { PRINT }
 | id as v          { VAR(v) }
 | bigid as i       { TNAME(i) }
 | digit+ as n      { INT(int_of_string n) }

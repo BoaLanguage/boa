@@ -21,7 +21,7 @@
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
 %token EOF LESS GREATER LEQ GEQ NEQ
 %token COMMA MOD INTDIV DIV RETURN
-%token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON NEWLINE
+%token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON NEWLINE PRINT
 
 %type <Ast.stmt> prog
 
@@ -59,11 +59,12 @@ stmt:
     | istmt EOF                       { $1 }
 
 istmt: 
-    | LPAREN exp RPAREN                 { Exp ($2) }
+    | exp                               { Exp ($1) }
     | assn                              { $1 }
     | decl                              { $1 }
     | fndef                             { $1 }
     | RETURN exp                        { Return($2) }
+    | PRINT exp                         { Print($2) }
 
 assn:
     | VAR EQUALS exp                    { Assign($1, $3) }
@@ -77,6 +78,7 @@ exp:
     | VAR                               { Var($1) }
     | bexp                              { $1 }
     | LPAREN exp RPAREN                 { $2 }
+    | exp LBRACK exp RBRACK             { SliceAccess($1, $3) }
 
 bexp:
     | exp PLUS exp                      { Binary(Plus, $1, $3) }
