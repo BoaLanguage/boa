@@ -1,9 +1,3 @@
-Bool b
-def name(Int x, Int y) -> Int: 
-  Int x
-  Int y
-  x = 5315 + 4 + y
-  return y
-  def b() -> Bool:
-    String s
-    return 53 <= (2 / x) // 2 ** 42 + y
+b : Bool
+def name(x:Int, y:Bool) -> Int: 
+  (x : Int) = 5

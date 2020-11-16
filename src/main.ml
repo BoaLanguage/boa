@@ -55,9 +55,7 @@ let () =
     Format.printf "Evaluating the expression...@\n@\n";
     Format.print_flush () in
 
-  let v = (match e with
-  | Exp(exp) -> Eval.eval exp
-  | _ -> failwith "Main") in
+  let v = Eval.evals e [] in
 
   (* (6) Pretty-print the final value. *)
   let _ =

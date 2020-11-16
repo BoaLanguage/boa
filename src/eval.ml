@@ -4,7 +4,7 @@ open Ast
    at "definition time." We also have "lazy" values, which let us delay the
    evaluation of expressions to support recursion. *)
 type value =
-  | Closure of var * typ * exp * store
+  | Closure of var * typ * stmt * store
   | VInt of int
   | VBool of bool
   | VTuple of value list
@@ -50,18 +50,19 @@ let rec eval' (e : exp) (s : store) : value =
 (* Turn values back into expressions (useful for pretty printing). *)
 let rec expr_of_value v =
   match v with
-  | Closure (x, t, e, s) -> Lam (x, t, e)
-  | VInt i -> Int i
+  (* | Closure (x, t, e, s) -> Lam (x, t, e) *)
+  (* | VInt i -> Int i
   | VBool b -> if b then Bool(true) else Bool(false)
   | VTuple vs -> Tuple (List.map expr_of_value vs)
-  | VLazy (e, s) -> e
+  | VLazy (e, s) -> e *)
   | _ -> failwith "Gooby"
 
 (* Evaluate a closed expression to an expression. *)
-let eval (e : exp) : exp =
+let evale (e : exp) : exp =
   let v = eval' e [] in
   expr_of_value v
 
-let eval (s : stmt) : store =
+let evals (s : stmt) (sigma : store) : store =
   match s with
-  | Exp (e) -> 
+  | Exp e -> []
+  | _ -> failwith "poop ass"

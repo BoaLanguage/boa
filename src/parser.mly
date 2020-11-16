@@ -46,9 +46,13 @@ declwrapper:
     | LPAREN declist RPAREN             { $2 }
     | LPAREN RPAREN                     { [] }
 
+thint:
+    | VAR COLON TNAME                   { (TBase($3), $1) }
+    | LPAREN thint RPAREN               { $2 }
+
 declist:
-    | TNAME VAR                         { [(TBase($1), $2)] }
-    | TNAME VAR COMMA declist           { (TBase($1), $2)::$4 }
+    | thint                            { [$1] }
+    | thint COMMA declist              { $1::$3 }
 
 stmt:
     | istmt NEWLINE                   { $1 }
@@ -56,12 +60,17 @@ stmt:
 
 istmt: 
     | LPAREN exp RPAREN                 { Exp ($2) }
-    | VAR EQUALS exp                    { Assign($1, $3) }
+    | assn                              { $1 }
     | decl                              { $1 }
     | fndef                             { $1 }
     | RETURN exp                        { Return($2) }
+
+assn:
+    | VAR EQUALS exp                    { Assign($1, $3) }
+
 decl:
-    | TNAME VAR                         { Decl (TBase($1), $2) }
+    | thint                             { Decl(fst $1, snd $1) }
+    | thint EQUALS exp                  { Block([Decl(fst $1, snd $1); Assign(snd $1, $3)]) }
 
 exp:
     | INT                               { Int($1) }
