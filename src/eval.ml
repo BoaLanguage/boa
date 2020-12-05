@@ -12,6 +12,7 @@ type value =
   | VDict of (value * value) list
   | VTuple of (value * value)
   | VList of value list
+  | VNone
 and store = (var * value) list
 
 (* Interpreter exceptions. *)
@@ -100,6 +101,8 @@ let evalb (b : binop) (l : value) (r : value) : value =
   | In -> failwith "unimplemented"
   | Neq -> VBool((int_of_value l) <> (int_of_value r))
 
+let call closure args : value = failwith "Unimplemented"
+
 let rec evale (e : exp) (s : store) : value =
   match e with
   | Var v -> lookup s v
@@ -108,7 +111,12 @@ let rec evale (e : exp) (s : store) : value =
     (match dict with
     | VDict l -> lookup_value l (VString(v))
     | _ -> failwith "TYPECHECK FAIL")
-  | SliceAccess (e1, e2) -> failwith "idk"
+  | SliceAccess (e1, e2) -> 
+      let obj = evale e1 s in 
+      let arg = evale e2 s in
+      (match obj with 
+      | VDict o -> call (lookup_value o (VString("__slice__"))) ([arg])
+      | _ -> failwith "TYPECHECK FAIL")
   | Binary (bin, e1, e2) -> evalb bin (evale e1 s) (evale e2 s)
   | Int i -> VInt(i)
   | Unary (u, exp) -> 
@@ -136,10 +144,8 @@ let rec evale (e : exp) (s : store) : value =
                         | (e1, e2)::rest -> (match evale (Dict(rest)) s with
                                             | VDict d -> VDict((evale e1 s, evale e2 s)::d)
                                             | _ -> failwith "TYPECHECK FAIL"))
+  | Skip -> VNone
   | _ -> failwith "not implemented expression"
-
-let call (closure: value) (arg_list: value list) = 
-  failwith "Unimplemented"
 
 let rec evals (conf:configuration) : store =
   match conf with

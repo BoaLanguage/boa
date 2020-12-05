@@ -112,6 +112,7 @@ let rec print_expr e =
     Format.printf "(";
     print_list lst;
     Format.printf ")";
+  | Skip -> Format.printf "None"
   | _ -> Format.printf "yikes"
 
 and print_list lst = 
@@ -150,7 +151,32 @@ let rec print_stmt s =
   | Print (e1) -> Format.printf "print: ";
   print_expr e1
   | Pass -> Format.printf ": pass :";
-  | _ -> Format.printf ""
+  | If (e1, s1, s2) -> 
+  Format.printf "If ("; print_expr e1; Format.printf ")\n";
+  print_stmt s1;
+  Format.printf "Else: \n";
+  print_stmt s2;
+  | Def (t1, fn, args, b) -> 
+  Format.printf "Function %s -> " fn;
+  print_typ t1;
+  Format.printf "\n";
+  print_stmt b;
+  | Break -> Format.printf ": break :"
+  | Continue -> Format.printf ": continue :"
+  | Block [] -> Format.printf "[]"
+  | While (e, b) -> 
+  Format.printf "While "; print_expr e; Format.printf "\n";
+  print_stmt b
+  | For (v, e, b) ->
+  Format.printf "For %s in " v;
+  print_expr e;
+  Format.printf "\n";
+  print_stmt b
+  | Class (v, e, b) -> 
+  Format.printf "Class %s (subclass of " v;
+  print_expr e;
+  Format.printf ")\n";
+  print_stmt b
 
 and print_lst lst = 
 match lst with 
