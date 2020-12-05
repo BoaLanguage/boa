@@ -1,21 +1,32 @@
 {
 open Parser
 open Printf
+open String
 exception Eof
 exception Err
 }
 
 let digit = ['0'-'9']
-let id = ['a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9']*
-let bigid = ['A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9']*
+let id = ['a'-'z' 'A'-'Z'] ['A'-'Z' 'a'-'z' '0'-'9']*
+let bigid = ['a'-'z' 'A'-'Z'] ['A'-'Z' 'a'-'z' '0'-'9']*
 let ws = [' ' '\t']
+let nls = ['\r' '\n']*
+
 
 rule token = parse
 | ws               { token lexbuf }
-| '\n'             { NEWLINE }
+| ['\n']+          { NEWLINE }
+| "{"              { INDENT }
+| "}"              { DEDENT }
+(* | ['\n']+[' ' '\t']+ as s 
+                   { INDENTLEVEL(String.length s) } *)
+| nls              { NLS }
 | "("              { LPAREN }
+(* | "_"              { INDENT } *)
 | ")"              { RPAREN }
 | "."              { DOT }
+(* | "'"              { SMALLQUOTE }
+| "\""             { BIGQUOTE }  *)
 | ";"              { SEMICOLON }
 | ":"              { COLON }
 | "->"             { ARROW }
@@ -24,6 +35,9 @@ rule token = parse
 | "="              { EQUALS }
 | "def"            { DEF }
 | "is"             { IS }
+| "for"            { FOR }
+| "class"          { CLASS }
+| "while"          { WHILE }
 | "+"              { PLUS }
 | "-"              { MINUS }
 | "<"              { LESS }

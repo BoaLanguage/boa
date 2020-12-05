@@ -44,6 +44,7 @@ type exp =
   | Tuple of exp list
   | List of exp list 
   | Dict of (exp * exp) list 
+  | Skip
 
 type stmt = 
   | Exp of exp 

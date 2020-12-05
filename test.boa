@@ -1,5 +1,8 @@
-x = 531
-print x
-print x + 53
-def f(x : Int) -> Int:
-  return x + 32
+def b() -> Int
+{
+if (weoifjweof)
+{webiowe}
+else
+{woifwe}
+iop
+}

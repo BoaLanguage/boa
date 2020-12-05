@@ -154,7 +154,8 @@ let rec evals (conf:configuration) : store =
   | sigma, Continue, c, [] -> failwith "Illegal continue"
   | sigma, Return e, c, [] -> failwith "Illegal Return" (* TODO: separate cont. lists*)
   | sigma, Def (_, name, args, body), c, kappa -> 
-    (name, Closure((List.map snd args), body, sigma))::sigma
+  Format.printf "%s" "ew";
+    evals ((name, Closure((List.map snd args), body, sigma))::sigma, Pass, c, kappa)
   
   | (_,
 (Exp _|Decl (_, _)|AttrAssgn (_, _, _)|SliceAssgn (_, _, _)|

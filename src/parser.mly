@@ -2,6 +2,11 @@
   open Ast
   open Printf
   open Lexing
+  open Stack
+
+  type bb = 
+  | End
+  | Pair of stmt * bb
 
   let tuple_type ts =
   match ts with
@@ -15,12 +20,13 @@
 %}
 
 %token <string> VAR TNAME
+%token <int> INDENTLEVEL
 %token <int> INT
 %token <bool> BOOL
-%token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA
+%token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA NLS FOR
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
-%token EOF LESS GREATER LEQ GEQ NEQ
-%token COMMA MOD INTDIV DIV RETURN
+%token EOF LESS GREATER LEQ GEQ NEQ CLASS WHILE
+%token COMMA MOD INTDIV DIV RETURN INDENT DEDENT
 %token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON NEWLINE PRINT
 
 %type <Ast.stmt> prog
@@ -28,77 +34,145 @@
 %start prog
 
 %%
-prog: block EOF                          { $1 }
+prog: 
+    | stmtlist EOF                     { Block($1) }
+    /* | stmt 
+      ind_tuple EOF                     { block_structure (($1, 0)::$2) 0 } */
 
 block:
-    | blockl                            { Block($1) }
+    | INDENT stmtlist DEDENT            { Block($2) }
+    | INDENT nll stmtlist nll DEDENT    { Block($3) }
+    | INDENT nll stmtlist DEDENT        { Block($3) }
+    | INDENT stmtlist nll DEDENT        { Block($2) }
 
-blockl: 
+nll:
+    | NEWLINE                           { [] }   
+    | nll NEWLINE                       { [] }                         
+
+/* indented_block:
+    | indented_stmtlist                 { Block($1) }
+
+indented_stmtlist:
+    | INDENT stmt                       { [$2] }
+    | indented_stmtlist 
+      NEWLINE INDENT stmt               { $1@[$4] } */
+
+stmtlist: 
     | stmt                              { [$1] }
-    | stmt blockl                       { $1::$2 }
-
-fndef:
-    | DEF VAR declwrapper 
-      ARROW TNAME COLON
-      NEWLINE block                     { Def(TBase($5), $2, $3, $8) }
-
-declwrapper:
-    | LPAREN declist RPAREN             { $2 }
-    | LPAREN RPAREN                     { [] }
-
-thint:
-    | VAR COLON TNAME                   { (TBase($3), $1) }
-    | LPAREN thint RPAREN               { $2 }
-
-declist:
-    | thint                            { [$1] }
-    | thint COMMA declist              { $1::$3 }
+    /* | stmtlist NEWLINE                  { $1 } */
+    | stmtlist NEWLINE stmt             { $1@[$3] }
+/* 
+ind_block:
+    | ind_tuple                         { block_structure $1 0 } */
+/* 
+ind_tuple:
+    | INDENTLEVEL stmt                  { [($2, $1)] }
+    | ind_tuple INDENTLEVEL stmt        { $1@[($3, $2)] } */
 
 stmt:
-    | istmt NEWLINE                   { $1 }
-    | istmt EOF                       { $1 }
+   |  expr                              { Exp($1) }
+   |  thint                             { Decl(fst $1, snd $1) }
+   |  expr DOT VAR EQUALS expr          { AttrAssgn($1, $3, $5) }
+   |  thint EQUALS expr                 { Block([
+                                            Decl(fst $1, snd $1);
+                                            Assign(snd $1, $3)
+                                            ]) }
+    | VAR EQUALS expr                   { Assign($1, $3) }
+    | expr LBRACK expr RBRACK 
+      EQUALS expr                       { SliceAssgn($1, $3, $6) }
+    | RETURN expr                       { Return ($2) }
+    | PRINT expr                        { Print ($2) }
+    | iff                               { $1 }
+    | DEF VAR paramlist ARROW 
+      VAR NEWLINE block                 { Def(TBase($5), $2, $3, $7) }
+    | WHILE expr NEWLINE block          { While($2, $4) }
+    | FOR VAR IN expr NEWLINE block     { For($2, $4, $6) }
+    | CLASS VAR NEWLINE block           { Class($2, Skip, $4) }
+    | CLASS VAR 
+      LPAREN expr RPAREN 
+      NEWLINE block                     { Class($2, $4, $7) }
 
-istmt: 
-    | exp                               { Exp ($1) }
-    | assn                              { $1 }
-    | decl                              { $1 }
-    | fndef                             { $1 }
-    | RETURN exp                        { Return($2) }
-    | PRINT exp                         { Print($2) }
-    | exp LBRACK exp RBRACK EQUALS exp  { SliceAssgn($1, $3, $6)}
+iff:
+    | IF expr NEWLINE 
+      block                    { If ($2, $4, Exp(Skip)) }
+    | IF expr NEWLINE            
+      block NEWLINE
+      ELSE NEWLINE
+      block                    { If ($2, $4, $8) }
+/* 
+elifchain:
+    | ELIF expr NEWLINE block           { If($2, $4, Exp(Skip)) }
+    | elifchain ELIF expr NEWLINE block { If() } */
 
-assn:
-    | VAR EQUALS exp                    { Assign($1, $3) }
-
-decl:
-    | thint                             { Decl(fst $1, snd $1) }
-    | thint EQUALS exp                  { Block([Decl(fst $1, snd $1); Assign(snd $1, $3)]) }
-
-exp:
-    | INT                               { Int($1) }
+expr:
+    | LPAREN expr RPAREN                { $2 }
     | VAR                               { Var($1) }
+    | expr arglist                      { Call($1, $2) }
+    | tuple                             { $1 }
+    | INT                               { Int($1) }
+    | expr LBRACK expr RBRACK           { SliceAccess($1, $3) }
+    | expr DOT VAR                      { AttrAccess($1, $3) }
+    | NOT expr                          { Unary(Not, $2) }
+    | MINUS expr                        { Unary(Neg, $2) }
+    | BOOL                              { Bool($1) }
+    | LAMBDA thint ARROW expr           { Lam(snd $2, fst $2, $4) }
+    | tuple                             { $1 }
+    | lst                               { $1 }
+    | dict                              { $1 }
     | bexp                              { $1 }
-    | sliceexp                          { $1 }
-    | LPAREN exp RPAREN                 { $2 }
-    
-sliceexp:
-    | exp LBRACK exp RBRACK             { SliceAccess($1, $3) }
 
 bexp:
-    | exp PLUS exp                      { Binary(Plus, $1, $3) }
-    | exp LESS exp                      { Binary(Less, $1, $3) }
-    | exp GREATER exp                   { Binary(Greater, $1, $3) }
-    | exp AND exp                       { Binary(And, $1, $3) }
-    | exp OR exp                        { Binary(Or, $1, $3) }
-    | exp EQUALSEQUALS exp              { Binary(Equal, $1, $3) }
-    | exp STAR exp                      { Binary(Times, $1, $3) }
-    | exp MINUS exp                     { Binary(Minus, $1, $3) }
-    | exp DIV exp                       { Binary(Divide, $1, $3) }
-    | exp MOD exp                       { Binary(Mod, $1, $3) }
-    | exp STARSTAR exp                  { Binary(Exponent, $1, $3) }
-    | exp INTDIV exp                    { Binary(IntDivide, $1, $3) }
-    | exp LEQ exp                       { Binary(Leq, $1, $3) }
-    | exp GEQ exp                       { Binary(Geq, $1, $3) }
-    | exp IS exp                        { Binary(Is, $1, $3) }
-    | exp IN exp                        { Binary(In, $1, $3) }
-    | exp NEQ exp                       { Binary(Neq, $1, $3) }
+    | expr PLUS expr                      { Binary(Plus, $1, $3) }
+    | expr LESS expr                      { Binary(Less, $1, $3) }
+    | expr GREATER expr                   { Binary(Greater, $1, $3) }
+    | expr AND expr                       { Binary(And, $1, $3) }
+    | expr OR expr                        { Binary(Or, $1, $3) }
+    | expr EQUALS expr                    { Binary(Equal, $1, $3) }
+    | expr STAR expr                      { Binary(Times, $1, $3) }
+    | expr MINUS expr                     { Binary(Minus, $1, $3) }
+    | expr DIV expr                       { Binary(Divide, $1, $3) }
+    | expr MOD expr                       { Binary(Mod, $1, $3) }
+    | expr STARSTAR expr                  { Binary(Exponent, $1, $3) }
+    | expr INTDIV expr                    { Binary(IntDivide, $1, $3) }
+    | expr LEQ expr                       { Binary(Leq, $1, $3) }
+    | expr GEQ expr                       { Binary(Geq, $1, $3) }
+    | expr IS expr                        { Binary(Is, $1, $3) }
+    | expr IN expr                        { Binary(In, $1, $3) }
+    | expr NEQ expr                       { Binary(Neq, $1, $3) }
+
+lst:
+    | LBRACK RBRACK                     { List([]) }
+    | LBRACK exprlist RBRACK            { List($2) }
+
+thint:
+    | VAR COLON VAR                     { (TBase($3), $1) }
+
+arglist:
+    | LPAREN RPAREN                     { [] }
+    | LPAREN exprlist RPAREN            { $2 }
+
+paramlist:
+    | LPAREN RPAREN                     { [] }
+    | LPAREN thintlist RPAREN           { $2 }
+
+thintlist:
+    | thint                             { [$1] }
+    | thintlist COMMA thint             { $1@[$3] }
+
+dict:
+    | INDENT DEDENT                     { Dict([]) }
+    | INDENT kvplist DEDENT             { Dict($2) }
+
+kvplist:
+    | kvp                               { [$1] }
+    | kvplist COMMA kvp                 { $1@[$3] }
+
+kvp:
+    | expr COLON expr                   { ($1, $3) }
+
+exprlist:
+    | expr                              { [$1] }
+    | exprlist COMMA expr               { $1@[$3] }
+
+tuple:
+    | LPAREN exprlist RPAREN            { Tuple($2) }

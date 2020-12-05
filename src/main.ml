@@ -1,4 +1,5 @@
 open Ast
+open Parser
 
 (* Command-line arguments. *)
 let filename = ref ""
@@ -7,6 +8,58 @@ let nocheck = ref false
 let options = [
   "-nocheck", Arg.Unit (fun _ -> nocheck := true), "Disable type checker"
 ]
+
+let str_of_token token = 
+  match token with
+    | VAR (s) -> "SOME VARIABLE " ^ s
+    | TNAME (s) -> s
+    | INDENTLEVEL (i) -> string_of_int i
+    | INT (i) -> string_of_int i
+    | BOOL (b) -> string_of_bool b
+    | LPAREN -> "("
+    | RPAREN -> ")"
+    | LBRACK -> "["
+    | RBRACK -> "]"
+    | DOT -> "."
+    | COLON -> ":"
+    | COMMA -> ","
+    | NLS -> "NLS"
+    | ARROW -> "->"
+    | LAMBDA -> "LAMBDA"
+    | EQUALS -> "="
+    | EQUALSEQUALS -> "=="
+    | DEF
+    | IS
+    | IN
+    | PLUS
+    | MINUS
+    | EOF
+    | LESS
+    | GREATER
+    | LEQ
+    | GEQ
+    | NEQ
+    | MOD
+    | INTDIV
+    | DIV
+    | RETURN
+    | INDENT
+    | STAR
+    | STARSTAR
+    | IF
+    | ELSE
+    | ELIF
+    | AND
+    | OR
+    | NOT
+    | SEMICOLON
+    | NEWLINE -> "Yo"
+    | PRINT ->  "fuck that shit"
+
+let rec print_lexbuf l =
+  match l with
+  | l when l.Lexing.lex_buffer_len = l.Lexing.lex_curr_pos -> ignore (Lexer.token l); Format.printf "%d"
+  | l -> (Lexer.token l |> str_of_token |> Format.printf "%s"); print_lexbuf l
 
 let () =
   (* (1) Parse the command-line arguments. *)
@@ -22,6 +75,9 @@ let () =
   let file = open_in (!filename) in
   let lexbuf = Lexing.from_channel file in
   let e =
+    (* Format.printf "%s\n" ((Lexer.token lexbuf) |> str_of_token);
+    Format.printf "%s\n" ((Lexer.token lexbuf) |> str_of_token); *)
+    (Format.printf "%s\n" (Lexing.lexeme lexbuf));
     try Parser.prog Lexer.token lexbuf
     with Parsing.Parse_error ->
       let pos = lexbuf.Lexing.lex_curr_p in
@@ -33,7 +89,7 @@ let () =
   let _ =
     Format.printf "@[";
     Format.printf "Expression:@\n  @[";
-    Format.printf "";
+    (Pprint.print_stmt e);
     Format.printf "@]@\n@\n" in
 
   (* (4) Typecheck the expression. *)

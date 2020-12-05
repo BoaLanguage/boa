@@ -63,11 +63,6 @@ let rec print_seq p sep exprs =
       print_seq p sep es)
   | _ -> ()
 
-let print_tuple p exprs =
-  Format.printf "@[<2>(";
-  print_seq p ", " exprs;
-  Format.printf ")@]"
-
 let string_of_binop o =
   match o with
   | Plus -> "+"
@@ -104,5 +99,63 @@ let print_typ t =
       Format.printf ")@]"
   in
   loop t
+
+let rec print_expr e = 
+  match e with 
+  | Var v -> print_ident v
+  | Int i -> Format.printf "%s" (string_of_int i)
+  | Bool b -> Format.printf "%s" (string_of_bool b)
+  | Call (fn, args) -> 
+    (print_expr fn); 
+    print_expr (Tuple(args))
+  | Tuple lst -> 
+    Format.printf "(";
+    print_list lst;
+    Format.printf ")";
+  | _ -> Format.printf "yikes"
+
+and print_list lst = 
+  match lst with
+  | [] -> Format.printf ""
+  | e::[] -> print_expr e
+  | e::r -> 
+  print_expr e; Format.printf ", "; print_list r
+
+let rec print_stmt s =
+  match s with
+  | Exp e -> print_expr e
+  | Block (s::rest) -> 
+  Format.printf "{";
+  print_stmt s; 
+  Format.printf ";\n";
+  print_lst rest;
+  Format.printf "}\n"
+  | Decl (t, v) -> 
+  Format.printf "%s : " v;
+  print_typ t
+  | AttrAssgn (ex, n, va) -> 
+  print_expr (AttrAccess(ex, n));
+  Format.printf " = "; print_expr va
+  | Assign (v, e) ->
+  Format.printf "%s := " v;
+  print_expr e
+  | SliceAssgn (e1, e2, e3) ->
+  print_expr e1;
+  Format.printf "[";
+  print_expr e2;
+  Format.printf "] := ";
+  print_expr e3
+  | Return (e1) -> Format.printf "return: ";
+  print_expr e1
+  | Print (e1) -> Format.printf "print: ";
+  print_expr e1
+  | Pass -> Format.printf ": pass :";
+  | _ -> Format.printf ""
+
+and print_lst lst = 
+match lst with 
+| [] -> Format.printf ""
+| s::[] -> print_stmt s
+| s::rest -> print_stmt s; Format.printf ";\n"; print_lst rest
 
 (* Pretty print expression e *)
