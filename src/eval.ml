@@ -48,6 +48,13 @@ let rec lookup s x : value =
     if x = y then u
     else (lookup t x)
 
+let rec lookup_value vdict vkey : value = 
+    match vdict with
+    | [] -> failwith "No member of that name/val"
+    | (k, v)::rest -> 
+      if k = vkey then v
+      else lookup_value rest vkey
+
 let int_of_value (v : value) : int =
   match v with
   | VInt i -> i
@@ -96,10 +103,39 @@ let evalb (b : binop) (l : value) (r : value) : value =
 let rec evale (e : exp) (s : store) : value =
   match e with
   | Var v -> lookup s v
-  | AttrAccess (e, v) -> failwith "not sure"
+  | AttrAccess (e, v) -> 
+    let dict = evale e s in 
+    (match dict with
+    | VDict l -> lookup_value l (VString(v))
+    | _ -> failwith "TYPECHECK FAIL")
   | SliceAccess (e1, e2) -> failwith "idk"
   | Binary (bin, e1, e2) -> evalb bin (evale e1 s) (evale e2 s)
   | Int i -> VInt(i)
+  | Unary (u, exp) -> 
+    let v = evale exp s in 
+    (match u with
+    | Not -> (match v with 
+              | VBool b -> VBool(not b)
+              | _ -> failwith "TYPECHECK FAIL")
+    | Neg -> (match v with
+              | VInt i -> VInt(-i)
+              | _ -> failwith "TYPECHECK FAIL"))
+  | Bool b -> VBool(b)
+  | Tuple explist -> (match explist with 
+                      | [] -> VList([])
+                      | exp::rest -> (match (evale (Tuple(rest)) s) with
+                                     | VList l -> VList((evale exp s)::l)
+                                     | _ -> failwith "TYPECHECK FAIL"))
+  | List explist -> (match explist with 
+                    | [] -> VList([])
+                    | exp::rest -> (match (evale (List(rest)) s) with
+                                  | VList l -> VList((evale exp s)::l)
+                                  | _ -> failwith "TYPECHECK FAIL"))
+  | Dict expexplist -> (match expexplist with 
+                        | [] -> VDict([])
+                        | (e1, e2)::rest -> (match evale (Dict(rest)) s with
+                                            | VDict d -> VDict((evale e1 s, evale e2 s)::d)
+                                            | _ -> failwith "TYPECHECK FAIL"))
   | _ -> failwith "not implemented expression"
 
 let call (closure: value) (arg_list: value list) = 
