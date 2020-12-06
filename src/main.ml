@@ -96,14 +96,16 @@ let () =
   let _ = if !nocheck then
       Format.printf "Type checking skipped.@\n@\n"
     else
-    (match e with
+      ignore (Check.check_stmt [] e (None));
+    (* (match e with
+    | s -> Check.check_stmt s
     | Exp (exp) -> 
       let t = Check.check_exp exp in
       Format.printf "@[";
       Format.printf "Type:@\n  @[";
       Pprint.print_typ t;
       Format.printf "@]@\n@\n"
-    | _ -> failwith "not a stmt")
+    | _ -> failwith "not a stmt") *)
   in
 
   (* (5) Evaluate the expression. *)

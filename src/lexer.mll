@@ -35,6 +35,7 @@ rule token = parse
 | "member"         { MEMBER }
 | "=="             { EQUALSEQUALS }
 | "="              { EQUALS }
+| "list"           { LIST }
 | "def"            { DEF }
 | "is"             { IS }
 | "for"            { FOR }

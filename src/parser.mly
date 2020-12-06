@@ -25,7 +25,7 @@
 %token <bool> BOOL
 %token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA NLS FOR
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
-%token EOF LESS GREATER LEQ GEQ NEQ CLASS WHILE MEMBER
+%token EOF LESS GREATER LEQ GEQ NEQ CLASS WHILE MEMBER LIST
 %token COMMA MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
 %token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON NEWLINE PRINT
 
@@ -71,7 +71,7 @@ ind_tuple:
 
 stmt:
    |  expr                              { Exp($1) }
-   |  thint                             { Decl(fst $1, snd $1) }
+   /* |  thint                             { Decl(fst $1, snd $1) } */
    |  expr DOT VAR EQUALS expr          { AttrAssgn($1, $3, $5) }
    |  LET thint EQUALS expr             { Block([
                                         Decl(fst $2, snd $2);
@@ -88,15 +88,15 @@ stmt:
     | PRINT expr                        { Print ($2) }
     | iff                               { $1 }
     | DEF VAR paramlist ARROW 
-      VAR NEWLINE block                 { Def(TBase($5), $2, $3, $7) }
+      typ NEWLINE block                 { Def($5, $2, $3, $7) }
     | WHILE expr NEWLINE block          { While($2, $4) }
     | FOR VAR IN expr NEWLINE block     { For($2, $4, $6) }
     | CLASS VAR NEWLINE block           { Class($2, Skip, $4) }
     | CLASS VAR 
       LPAREN expr RPAREN 
       NEWLINE block                     { Class($2, $4, $7) }
-    | MEMBER VARKEYWORD VAR COLON VAR         { MutableMemDecl(TBase($5), $3) }
-    | MEMBER LET VAR COLON VAR                { MemDecl(TBase($5), $3) }
+    | MEMBER VARKEYWORD VAR COLON typ         { MutableMemDecl($5, $3) }
+    | MEMBER LET VAR COLON typ                { MemDecl($5, $3) }
 
 iff:
     | IF expr NEWLINE 
@@ -151,7 +151,19 @@ lst:
     | LBRACK exprlist RBRACK            { List($2) }
 
 thint:
-    | VAR COLON VAR                     { (TBase($3), $1) }
+    | VAR COLON typ                     { ($3, $1) }
+    | LPAREN thint RPAREN               { $2 }
+
+typ:
+    | VAR                               { TBase($1) }
+    | typ ARROW typ                     { TFun($1, $3) }
+    | typlist                           { TTuple($1) }
+    | typ LIST                          { TList($1) }
+    | LPAREN typ RPAREN                 { $2 }
+
+typlist:
+    | typ                               { [$1] }
+    | typlist STAR typ                  { $1@[$3] }
 
 arglist:
     | LPAREN RPAREN                     { [] }

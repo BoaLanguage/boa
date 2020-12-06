@@ -1,0 +1,21 @@
+let fn : Int -> Int = lambda (x : Int) -> x + 5
+if (10 > 0)
+{
+  let y : Int = 30
+}
+else 
+{
+  let x : Int = 50
+}
+let x : Int = 500
+let z : Int = 100
+def add(x : Int, y : Int) -> Int
+{
+  return x + y
+}
+z = add(add(x,x), x)
+def apply_fn(fn : Int -> Int, arg : Int) -> Int
+{
+  return fn(arg)
+}
+z = apply_fn(lambda (x : Int) -> x + 5, 0)
