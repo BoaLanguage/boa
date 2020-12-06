@@ -261,7 +261,9 @@ and evals (conf:configuration) : env =
   | sigma, Class (name, super, stmt), c, kappa ->
     let new_sigma = ("__mattrs__", VList([]))::("__attrs__", VList([]))::sigma in
     let obj_dict = evals (new_sigma, stmt, Pass, []) in
-    let clobj = VObj(take (List.length obj_dict - List.length sigma) obj_dict) in
+    let new_dict = (take (List.length obj_dict - List.length sigma)) obj_dict in
+    let clobj = VObj(new_dict) in
+    (* let clobj = VObj((name, VRef (ref (Some(clobj))))::new_dict) in *)
     evals ((name, VRef (ref (Some(clobj))))::sigma, c, Pass, kappa)
   | _ -> failwith "unimplemented"
 
