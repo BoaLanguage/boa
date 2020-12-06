@@ -179,6 +179,7 @@ let rec print_stmt s =
   print_stmt b
   | MutableDecl (t, v) -> 
   Format.printf "Mutable decl: %s" v;
+  | _ -> Format.printf "DECLS"
 
 and print_lst lst = 
 match lst with 
@@ -191,10 +192,10 @@ match lst with
 let rec print_value (v : value) =
   match v with
   | VInt i -> Format.printf "%d" i;
-  | VRef vr -> Format.printf "mutable "; 
+  | VRef vr -> Format.printf "mutable ("; 
     (match !vr with 
-    | Some v -> print_value (v);
-    | None -> Format.printf "None";)
+    | Some v -> print_value (v); Format.printf ")";
+    | None -> Format.printf "None)";)
   | VString s -> Format.printf "%s" s;
   | VBool b -> Format.printf "%b" b;
   | VClosure (v, body, env) -> Format.printf "%s" "Some closure";
@@ -210,15 +211,21 @@ let rec print_value (v : value) =
     print_value (VDict(rest)))
   | VList l -> 
     (match l with
-    | [] -> Format.printf "[]"
+    | [] -> Format.printf ""
     | v::rest -> 
     print_value v;
     Format.printf ", ";
     print_value (VList(rest)))
   | VObj l -> 
     (match l with 
-    | [] -> Format.printf "object"
-    | (k, v)::rest -> )
+    | [] -> Format.printf "obj."
+    | (v, va)::rest -> 
+    Format.printf "%s <- " v;
+    (match va with 
+     | Some value -> print_value value;
+     | None -> Format.printf "None");
+    Format.printf ", ";
+    print_value (VObj (rest)));
   | _ -> failwith "unimplemented"
 
 let rec print_env (s : env) =

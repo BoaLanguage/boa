@@ -32,6 +32,7 @@ rule token = parse
 | ":"              { COLON }
 | "->"             { ARROW }
 | "lambda"         { LAMBDA }
+| "member"         { MEMBER }
 | "=="             { EQUALSEQUALS }
 | "="              { EQUALS }
 | "def"            { DEF }

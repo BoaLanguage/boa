@@ -50,7 +50,9 @@ type stmt =
   | Exp of exp 
   | Assign of var * exp
   | Decl of typ * var
+  | MemDecl of typ * var
   | MutableDecl of typ * var
+  | MutableMemDecl of typ * var
   | AttrAssgn of exp * var * exp
   | SliceAssgn of exp * exp * exp
   | Return of exp
@@ -73,7 +75,7 @@ type value =
   | VClosure of var list * stmt * env ref
   | VDict of (value * value) list
   | VTuple of (value * value)
-  | VObj of (var * value) list
+  | VObj of (var * value option) list
   | VList of value list
   | VNone
   | VRef of value option ref

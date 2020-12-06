@@ -1,9 +1,20 @@
-let z : Int = 531
-
-def change(x : Int) -> Int
+class Test
 {
-  z = x
-  return 0
+  member let x : Int
+  member let y : Int
+
+  def __init__(self : Test, x : Int, y : Int) -> Test
+  {
+    self.x = x
+    self.y = y
+    return self
+  }
+
+  def getLength(self : Test) -> Int
+  { 
+    return self.x
+  }
 }
 
-y = change(1000)
+pt = Test(1, 30)
+x = pt.getLength

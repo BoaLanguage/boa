@@ -21,7 +21,7 @@ let make_configuration (prog: stmt) : configuration =
   ([], prog, Pass, [])
 (* A function to update the binding for x in env s.
    update (s, x, v) returns the env s[x->v]. *)
-let rec update s x v : env =
+let rec update s x v =
   match s with
   | [] ->
     [(x, v)]
@@ -38,6 +38,17 @@ let rec lookup s x : value =
   | (y,u)::t ->
     if x = y then u
     else (lookup t x)
+
+let rec lookup_opt s x : value =
+  match s with
+  | [] ->
+    raise (UnboundVariable x)
+  | (y,u)::t ->
+    if x = y then 
+      (match u with 
+      | Some v -> v
+      | _ -> failwith "TYPECHECK FAIL")
+    else (lookup_opt t x)
 
 let rec lookup_value vdict vkey : value = 
     match vdict with
@@ -94,17 +105,23 @@ let eval_fun (f: stmt) (e: env) : value =
 let rec evale (e : exp) (s : env) : value =
   match e with
   | Var v -> (match lookup s v with 
-              | VRef vr -> 
+              | VRef vr as vref_og-> 
                 (match !vr with 
+                | Some (VObj(o)) -> vref_og
                 | Some v -> v
                 | None -> failwith "Typechecker: Uninitialized")
               | any -> any)
   | Call (fn, args) -> 
   call (evale fn s) (List.map (fun f -> f s) (List.map (evale) args))
   | AttrAccess (e, v) -> 
-    let dict = evale e s in 
+    let dict = evale e s in
+    Format.printf "WEOFIJWEOFIJWEOFIJ"; 
     (match dict with
-    | VObj l -> lookup_value l v
+    | VRef r -> 
+        (match !r with 
+        | (Some (VObj(o))) -> lookup_opt o v
+        | _ -> failwith "god damnit")
+    | VObj l -> (lookup_opt l v)
     | _ -> failwith "TYPECHECK FAIL")
   | SliceAccess (e1, e2) -> 
       let obj = evale e1 s in 
@@ -140,7 +157,7 @@ let rec evale (e : exp) (s : env) : value =
                                             | VDict d -> VDict((evale e1 s, evale e2 s)::d)
                                             | _ -> failwith "TYPECHECK FAIL"))
   | Skip -> VNone
-  | Lam (v, t, e) -> VClosure ([v], Exp(e), ref s)
+  | Lam (v, t, e) -> VClosure ([v], Return(e), ref s)
   | _ -> failwith "not implemented expression"
 
 and evals (conf:configuration) : env =
@@ -156,19 +173,62 @@ and evals (conf:configuration) : env =
     | _ -> (v, n)::sigma)      
     in evals (new_sigma, c, Pass, kappa)
     end
-    | sigma, AttrAssgn(objexp, attr, e), c, kappa ->
-      begin
+  | sigma, AttrAssgn(objexp, attr, e), c, kappa ->
+    begin
       let v = evale e sigma in 
       let obj = evale objexp sigma in
-      let new_sigma = 
-      (match List.assoc_opt v sigma with 
-      | Some (VRef r) -> r := Some n; sigma 
-      | _ -> (v, n)::sigma)      
-      in evals (new_sigma, c, Pass, kappa)
-      end
+      (match obj with
+      | VRef r -> 
+        begin
+        match !r with 
+        | Some VObj(old_obj) -> 
+            match List.assoc_opt attr old_obj with 
+            | Some (result) -> 
+            begin
+              let _ = (match result with 
+              | Some (attr_value) -> 
+                (match attr_value with 
+                | VRef value -> value := (Some v)
+                | _ -> failwith "Second assignment in initializer")
+              | None -> r := (Some (VObj((update old_obj attr (Some v)))))
+              | _ -> failwith "Typecheck Init fail2") in evals (sigma, c, Pass, kappa)
+            end
+            | _ -> failwith "Unbound attribute"
+        | _ -> failwith "Infrastructure Fail"
+        end
+      | VObj obj -> 
+        begin
+        let new_obj = 
+          (match List.assoc_opt attr obj with
+          | Some (result) -> 
+            (match result with 
+            | Some (attr_value) -> 
+              (match attr_value with 
+              | VRef value -> value := (Some v)
+              | _ -> failwith "Immutable Attribute")
+            | _ -> "Typecheck Init fail1: " ^ attr |> failwith)
+          | _ -> failwith "Unbound Attribute")      
+          in evals (sigma, c, Pass, kappa)
+        end
+      
+      | _ -> failwith "TYPECHECK FAIL")
+      
+    end
   | sigma, Decl (_, _), c, kappa -> evals (sigma, Pass, c, kappa)
   | sigma, MutableDecl (_, v), c, kappa -> 
     evals ((v, VRef (ref None))::sigma, c, Pass, kappa)
+  | sigma, MemDecl(_, v), c, kappa -> 
+      let attrs = lookup sigma "__attrs__" in 
+      (match attrs with 
+      | VList lst -> let new_sigma = update sigma "__attrs__" (VList((VString(v))::lst)) in 
+        evals (new_sigma, Pass, c, kappa) 
+      | _ -> failwith "TYPECHECK FAILED: ATTRS NOT A LIST")
+  | sigma, MutableMemDecl(_, v), c, kappa -> 
+      let mattrs = lookup sigma "__mattrs__" in 
+      (match mattrs with 
+      | VList lst -> let new_sigma = update sigma "__mattrs__" (VList(((VString(v))::lst))) in 
+        evals (new_sigma, Pass, c, kappa) 
+      | _ -> failwith "TYPECHECK FAILED: MATTRS NOT A LIST")
   | sigma, Block(c1::t), Pass, kappa -> evals (sigma, c1, Block(t), kappa)
   | sigma, Block(c1::t), c3, kappa -> evals (sigma, c1, Block(t@[c3]), kappa)
   
@@ -210,10 +270,11 @@ and evals (conf:configuration) : env =
   | sigma, Def (rt, name, args, body), c, kappa -> 
     evals ((name, eval_fun (Def (rt, name, args, body)) sigma)::sigma, Pass, c, kappa)
   | sigma, Class (name, super, stmt), c, kappa ->
-    let new_sigma = sigma in
-    let clobj = VObj(evals (sigma, stmt, Pass, [])) in
-    evals ((name, clobj)::new_sigma, c, Pass, kappa)
-
+    let new_sigma = ("__mattrs__", VList([]))::("__attrs__", VList([]))::sigma in
+    let obj_dict = evals (new_sigma, stmt, Pass, []) in
+    let obj_dict' = List.map (fun (var, val') -> (var, Some(val'))) obj_dict in
+    let clobj = VObj(obj_dict') in
+    evals ((name, clobj)::sigma, c, Pass, kappa)
   | _ -> failwith "unimplemented"
 
 and call (vclosure : value) (args : value list) : value = 
@@ -227,12 +288,32 @@ and call (vclosure : value) (args : value list) : value =
     | _ -> 
     (List.map2 zip params args)@(!env_ref)) in 
     lookup (evals (callenv, body, Pass, [])) "return"
-  | VObj obj -> 
+  | VObj cls_obj -> 
   begin
-    match (lookup_value obj "__init__") with
-    | VClosure (params, body, env) -> 
-      let new_env: env = ("class", VObj(obj))::(!env) in
-      call (VClosure(List.tl params, body, ref new_env)) args
+    match (lookup_opt cls_obj "__init__") with
+    | VClosure (params, body, env) as init -> 
+    let attrs = lookup_opt cls_obj "__attrs__" in 
+    let mattrs = lookup_opt cls_obj "__mattrs__" in
+    let extract_string_list vlist = 
+      (match vlist with 
+      | VList (val_list) -> 
+        let extract_string vstring = 
+          (match vstring  with
+          | VString s -> s
+          | _ -> failwith "INFRASTRUCTURE FAIL") in
+        List.map extract_string val_list
+      | _ -> failwith "INFRASTRUCTURE FAILLLL") in 
+    let attrs', mattrs' = extract_string_list attrs, extract_string_list mattrs in
+    let preinit_attrs = List.map (fun x -> (x, None)) attrs' in
+    let preinit_mattrs = List.map (fun n -> (n, Some (VRef(ref None)))) mattrs' in
+    let initial_obj_list = preinit_attrs@preinit_mattrs@[("__class__", (Some(VObj (cls_obj))))] in
+    let instance = VObj(initial_obj_list) in 
+    let new_args = (VRef (ref (Some instance)))::args in
+    call init new_args
     | _ -> failwith "Typecheck fail"
   end 
   | _ -> failwith "TYPECHECK FAIL"
+
+  (*
+      let new_env: env = ("class", VObj(cls_obj))::(!env) in
+      call (VClosure(List.tl params, body, ref new_env)) args ) *)
