@@ -177,6 +177,8 @@ let rec print_stmt s =
   print_expr e;
   Format.printf ")\n";
   print_stmt b
+  | MutableDecl (t, v) -> 
+  Format.printf "Mutable decl: %s" v;
 
 and print_lst lst = 
 match lst with 
@@ -185,3 +187,39 @@ match lst with
 | s::rest -> print_stmt s; Format.printf ";\n"; print_lst rest
 
 (* Pretty print expression e *)
+
+let rec print_value (v : value) =
+  match v with
+  | VInt i -> Format.printf "%d" i;
+  | VRef vr -> Format.printf "mutable "; 
+    (match !vr with 
+    | Some v -> print_value (v);
+    | None -> Format.printf "None";)
+  | VString s -> Format.printf "%s" s;
+  | VBool b -> Format.printf "%b" b;
+  | VClosure (v, body, env) -> Format.printf "%s" "Some closure";
+  | VDict d -> 
+    (match d with 
+    | [] -> Format.printf "{}"
+    | (v1, v2)::rest -> 
+    Format.printf "(";
+    print_value v1; 
+    Format.printf ": ";
+    print_value v2;
+    Format.printf "), ";
+    print_value (VDict(rest)))
+  | VList l -> 
+    (match l with
+    | [] -> Format.printf "[]"
+    | v::rest -> 
+    print_value v;
+    Format.printf ", ";
+    print_value (VList(rest)))
+  | VObj l -> 
+    (match l with 
+    | [] -> Format.printf "object"
+    | (k, v)::rest -> )
+  | _ -> failwith "unimplemented"
+
+let rec print_env (s : env) =
+  List.iter (fun (var, v) -> Format.printf "\n%s: " var; print_value v) s; ()

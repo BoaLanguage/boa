@@ -1,0 +1,9 @@
+let z : Int = 531
+
+def change(x : Int) -> Int
+{
+  z = x
+  return 0
+}
+
+y = change(1000)

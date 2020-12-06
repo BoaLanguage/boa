@@ -26,7 +26,7 @@
 %token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA NLS FOR
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
 %token EOF LESS GREATER LEQ GEQ NEQ CLASS WHILE
-%token COMMA MOD INTDIV DIV RETURN INDENT DEDENT
+%token COMMA MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
 %token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON NEWLINE PRINT
 
 %type <Ast.stmt> prog
@@ -73,10 +73,14 @@ stmt:
    |  expr                              { Exp($1) }
    |  thint                             { Decl(fst $1, snd $1) }
    |  expr DOT VAR EQUALS expr          { AttrAssgn($1, $3, $5) }
-   |  thint EQUALS expr                 { Block([
-                                            Decl(fst $1, snd $1);
-                                            Assign(snd $1, $3)
-                                            ]) }
+   |  LET thint EQUALS expr             { Block([
+                                        Decl(fst $2, snd $2);
+                                        Assign(snd $2, $4)
+                                        ]) }
+    | VARKEYWORD thint EQUALS expr      { Block([
+                                        MutableDecl(fst $2, snd $2);
+                                        Assign(snd $2, $4)
+                                        ]) }                                      
     | VAR EQUALS expr                   { Assign($1, $3) }
     | expr LBRACK expr RBRACK 
       EQUALS expr                       { SliceAssgn($1, $3, $6) }
