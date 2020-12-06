@@ -221,12 +221,12 @@ let rec print_value (v : value) =
     | [] -> Format.printf "obj."
     | (v, va)::rest -> 
     Format.printf "%s <- " v;
-    (match va with 
-     | Some value -> print_value value;
-     | None -> Format.printf "None");
+    print_value va;
     Format.printf ", ";
     print_value (VObj (rest)));
-  | _ -> failwith "unimplemented"
+  | VNone -> Format.printf "None";
+  | VPreObj (_) -> Format.printf "Preobj";
+  | _ -> failwith "shit"
 
 let rec print_env (s : env) =
   List.iter (fun (var, v) -> Format.printf "\n%s: " var; print_value v) s; ()

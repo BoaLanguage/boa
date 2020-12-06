@@ -1,20 +1,16 @@
 class Test
 {
-  member let x : Int
+  member var x : Int
   member let y : Int
 
   def __init__(self : Test, x : Int, y : Int) -> Test
   {
     self.x = x
     self.y = y
-    return self
-  }
 
-  def getLength(self : Test) -> Int
-  { 
-    return self.x
+    return self
   }
 }
 
 pt = Test(1, 30)
-x = pt.getLength
+pt.x = 4

@@ -75,7 +75,8 @@ type value =
   | VClosure of var list * stmt * env ref
   | VDict of (value * value) list
   | VTuple of (value * value)
-  | VObj of (var * value option) list
+  | VObj of (var * value) list
+  | VPreObj of (var * value ref) list
   | VList of value list
   | VNone
   | VRef of value option ref
