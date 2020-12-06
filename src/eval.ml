@@ -118,14 +118,13 @@ let rec evale (e : exp) (s : env) : value =
   | Call (fn, args) -> 
   call (evale fn s) (List.map (fun f -> f s) (List.map (evale) args))
   | AttrAccess (e, v) -> 
-    let dict = evale e s in
-    (match dict with
-    | VRef r -> 
-        (match !r with 
-        | (Some (VObj(o))) -> lookup o v
-        | _ -> failwith "god damnit")
-    | VObj l -> (lookup l v)
-    | _ -> failwith "TYPECHECK FAIL")
+    let obj_val = evale e s in
+    let obj = extract_class obj_val in
+    let cls_ref = (extract_class (lookup obj "__class__")) in 
+    let res = lookup (obj@cls_ref) v in
+      (match res with 
+      | VClosure (_, _, _) -> VMethodCall (obj_val, res)
+      | v -> deref_value v)
   | SliceAccess (e1, e2) -> 
       let obj = evale e1 s in 
       let arg = evale e2 s in 
@@ -191,7 +190,7 @@ and evals (conf:configuration) : env =
           | _ -> failwith "Unbound attribute")
       | VObj obj -> 
         begin
-        let new_obj = 
+        let _ = 
           (match List.assoc_opt attr obj with
           | Some (result) -> 
             (match result with 
@@ -268,8 +267,18 @@ and evals (conf:configuration) : env =
 
 and call (vclosure : value) (args : value list) : value = 
   let zip p a = (p, a) in
-  (* failwith "poopy" *)
   match vclosure with 
+  | VMethodCall (obj, closure) -> 
+    (
+      match call (closure) (obj::args) with
+      | VRef r -> 
+      begin
+        match !r with
+        | Some v -> v
+        | _ -> failwith "Method returned none"
+      end
+      | v -> v
+    )
   | VClosure (params, body, env_ref) -> 
   let callenv = 
     (match args with 
@@ -320,3 +329,21 @@ and call (vclosure : value) (args : value list) : value =
   (*
       let new_env: env = ("class", VObj(cls_obj))::(!env) in
       call (VClosure(List.tl params, body, ref new_env)) args ) *)
+  and extract_class value = 
+  match value with 
+  | VRef r -> 
+  begin
+    match !r with
+    | Some (VObj (cls_ref)) -> cls_ref
+    | _ -> failwith "not a class"
+  end
+  | VObj(cls_ref) -> cls_ref
+  | _ -> failwith "Not a class"
+
+  and deref_value value =
+  match value with 
+  | VRef r -> 
+    (match !r with 
+    | Some v -> v
+    | None -> failwith "Fail")
+  | _ -> value

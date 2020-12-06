@@ -225,8 +225,12 @@ let rec print_value (v : value) =
     Format.printf ", ";
     print_value (VObj (rest)));
   | VNone -> Format.printf "None";
-  | VPreObj (_) -> Format.printf "Preobj";
-  | _ -> failwith "shit"
+  | VPreObj (a) -> Format.printf "Preobj";
+  | VMethodCall (obj, m) -> 
+      print_value obj;
+      Format.printf ".";
+      print_value m;
+  | _ -> failwith "Shit"
 
 let rec print_env (s : env) =
   List.iter (fun (var, v) -> Format.printf "\n%s: " var; print_value v) s; ()

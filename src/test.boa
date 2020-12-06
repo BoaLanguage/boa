@@ -10,7 +10,13 @@ class Test
 
     return self
   }
+
+  def test(self : Test) -> Int 
+  { 
+    self.x = 5
+    return self.x + 5
+  }
 }
 
 pt = Test(1, 30)
-pt.x = 4
+tee = pt.test()

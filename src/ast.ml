@@ -76,6 +76,7 @@ type value =
   | VDict of (value * value) list
   | VTuple of (value * value)
   | VObj of (var * value) list
+  | VMethodCall of (value * value)
   | VPreObj of (var * value ref) list
   | VList of value list
   | VNone
