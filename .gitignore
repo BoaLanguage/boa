@@ -1,7 +1,7 @@
-src/*.cmi
-src/*.cmo
+obj/*.cmi
+obj/*.cmo
 src/parser.ml
 src/parser.output
 src/lexer.ml
 src/*.mli
-src/boa
+bin/boa
