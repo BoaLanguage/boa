@@ -4,7 +4,9 @@
 Our vision is that we can produce a variant of Python where programs can have more assurances about abstractions, achieved through the type system and immutability. Ideally, programmers will be able to take advantage of the expressiveness and simplicity of Python while also being able to write elegant and clear code where correctness can be more easily reasoned about. 
 
 ## Status
-boa is currently able to support typechecking of most control structures aside from objects and classes (some others), and can evaluate almost all control structures aside from object slice access expressions and for loops over iterables. In order to run a boa program that makes use of classes and objects, you will have to run the command `boa [filename] -nocheck`. Otherwise,
+boa is currently able to support typechecking of most control structures aside from objects and classes (some others), and can evaluate almost all control structures aside from object slice access expressions and for loops over iterables. 
+
+To build the boa interpreter, run "make", pertaining to the makefile in the src directory. In order to run a boa program that makes use of classes and objects, you will have to run the command `boa [filename] -nocheck`. Otherwise,
 
 Boa programs can be written in a similar manner to Python programs, with a couple of key differences. 
 
@@ -55,8 +57,9 @@ def Vector2d
 let vec1 : Vector2d = Vector2d(10, 20)
 let vec2 : Vector2d = Vector2d(1, 2)
 let vec3 : Vector2d = vec1.add(vec2)
+print (vec3.x)
+print (vec3.y)
 
 ## Next Steps
 
-Our next steps include getting our evaluation to work on all control 
-structures and statements.
+In our next steps, we plan to finish off typechecking and evaluation of for loops, iterables, and slices. We also plan to build some part of a compatibility library which will allow boa users to interface with Python. 
