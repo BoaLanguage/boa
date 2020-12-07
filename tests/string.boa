@@ -2,5 +2,4 @@ var x : String = "james"
 x = "This is jam.es"
 x = 'thewi'
 let y : String = "thewi"
-let y : String list = ['wfe', 'wef', 'wewioewgwe', "weif"]
-z = {'e' : 5, 'bwef': 430}
+let y : String list = ['wfe', 'wef', '', "weif"]
