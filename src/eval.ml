@@ -12,6 +12,7 @@ exception UnboundVariable of var
 exception IllegalBreak
 exception IllegalContinue
 exception IllegalReturn
+exception TypecheckerFail of error_info 
 
 (* A type for configurations. *)
 type configuration = 
@@ -108,65 +109,70 @@ let eval_fun (f: stmt) (e: env) : value =
   | _-> failwith "TYPECHECKERFAIL"
 
 let rec evale (e : exp) (s : env) : value =
-  match e with
-  | Var v -> (match lookup s v with 
-              | VRef vr-> 
-                (match !vr with 
-                | Some v -> v
-                | None -> failwith "Typechecker: Uninitialized")
-              | any -> any)
-  | Call (fn, args) -> 
-  call (evale fn s) (List.map (fun f -> f s) (List.map (evale) args))
-  | AttrAccess (e, v) -> 
-    let obj_val = evale e s in
+  let evaluate_var v =
+    let lookup_result = lookup s v in   
+    match lookup_result with 
+    | VRef vr->
+    begin
+      match !vr with 
+      | Some v -> v
+      | None -> raise @@ TypecheckerFail "Uninitialized"
+    end
+    | _ -> lookup_result in 
+  let evaluate_application callable_expression args = 
+    call (evale callable_expression s) (List.map (fun f -> f s) (List.map (evale) args)) in 
+  let evaluate_attribute_access object_expression attribute_identifier = 
+    let obj_val = evale object_expression s in
     let obj = extract_class obj_val in
     let cls_ref = (extract_class (lookup obj "__class__")) in 
-    let res = lookup (obj@cls_ref) v in
-      (match res with 
-      | VClosure (_, _, _) -> VMethodCall (obj_val, res)
-      | v -> deref_value v)
-  | SliceAccess (e1, e2) -> 
-      let obj = evale e1 s in 
-      let arg = evale e2 s in 
-      (match obj with 
-      | VDict o -> call (lookup_value o (VString("__slice__"))) ([arg])
-      | _ -> failwith "TYPECHECK FAIL")
+    let res = lookup (obj@cls_ref) attribute_identifier in
+    match res with 
+    | VClosure (_, _, _) -> VMethodCall (obj_val, res) (** Bind object to self *)
+    | v -> deref_value v in
+  let evaluate_slice_access sliceable_expression index_expression = 
+    (* let obj = evale sliceable_expression s in  *)
+    (* match obj with 
+    | VDict o -> call (lookup_value o (VString("__slice__"))) ([arg])
+    | _ -> call (evaluate_attribute_access sliceable_expression "__slice__") [arg] in *)
+    let arg = evale index_expression s in
+    call (evaluate_attribute_access sliceable_expression "__slice__") [arg] in
+  let evaluate_unary_operator operator operand = 
+    let operand_value = evale operand s in
+    match operator, operand_value with 
+    | Not, VBool b -> VBool (not b)
+    | Neg, VInt i -> VInt (-i)
+    | _, _ -> raise @@ TypecheckerFail "Unary Operator Application" in
+  let evaluate_tuple expression_list = 
+    let value_lst = List.map (fun expression -> evale expression s) expression_list in
+    VTuple (value_lst) in
+  let evaluate_list = evaluate_tuple in
+  let evaluate_dict kv_expression_list = 
+    let kv_value_list = 
+      List.map (fun (k,v) -> evale k s, evale v s) kv_expression_list in 
+    VDict kv_value_list in 
+  match e with
+  | Var identifier -> evaluate_var identifier 
+  | Call (fn, args) -> evaluate_application fn args
+  | AttrAccess (e, v) -> evaluate_attribute_access e v
+  | SliceAccess (e1, e2) -> evaluate_slice_access e1 e2      
   | Binary (bin, e1, e2) -> evalb bin (evale e1 s) (evale e2 s)
   | Int i -> VInt(i)
-  | Unary (u, exp) -> 
-    let v = evale exp s in 
-    (match u with
-    | Not -> (match v with 
-              | VBool b -> VBool(not b)
-              | _ -> failwith "TYPECHECK FAIL")
-    | Neg -> (match v with
-              | VInt i -> VInt(-i)
-              | _ -> failwith "TYPECHECK FAIL"))
+  | Unary (operator, operand) -> evaluate_unary_operator operator operand 
   | Bool b -> VBool(b)
-  | Tuple explist -> (match explist with 
-                      | [] -> VList([])
-                      | exp::rest -> (match (evale (Tuple(rest)) s) with
-                                     | VList l -> VList((evale exp s)::l)
-                                     | _ -> failwith "TYPECHECK FAIL"))
-  | List explist -> (match explist with 
-                    | [] -> VList([])
-                    | exp::rest -> (match (evale (List(rest)) s) with
-                                  | VList l -> VList((evale exp s)::l)
-                                  | _ -> failwith "TYPECHECK FAIL"))
-  | Dict expexplist -> (match expexplist with 
-                        | [] -> VDict([])
-                        | (e1, e2)::rest -> (match evale (Dict(rest)) s with
-                                            | VDict d -> VDict((evale e1 s, evale e2 s)::d)
-                                            | _ -> failwith "TYPECHECK FAIL"))
+  | Tuple explist -> evaluate_tuple explist
+  | List explist -> evaluate_list explist
+  | Dict expexplist -> evaluate_dict expexplist
   | Skip -> VNone
   | Lam (v, t, e) -> VClosure ([v], Return(e), ref s)
-  | _ -> failwith "not implemented expression"
+  | _ -> failwith "Unimplemented: Expression"
 
+  
 and evals (conf:configuration) : env =
-  match conf with
-  | sigma, Pass, Pass, kappa -> sigma
-  | sigma, Pass, c, kappa -> evals (sigma, c, Pass, kappa)
-  | sigma, Assign(v, a), c, kappa ->
+  let sigma, current_statement, next_statement, kappa = conf in
+  match current_statement, next_statement with
+  | Pass, Pass -> sigma
+  | Pass, c -> evals (sigma, c, Pass, kappa)
+  | Assign(v, a), c ->
     begin
     let n = evale a sigma in 
     let new_sigma = 
@@ -175,7 +181,7 @@ and evals (conf:configuration) : env =
     | _ -> (v, n)::sigma)      
     in evals (new_sigma, c, Pass, kappa)
     end
-  | sigma, AttrAssgn(objexp, attr, e), c, kappa ->
+  | AttrAssgn(objexp, attr, e), c ->
     begin
       let v = evale e sigma in 
       let obj = evale objexp sigma in
@@ -201,38 +207,38 @@ and evals (conf:configuration) : env =
         end
       
       | _ -> print_value obj; ("TYPECHECK FAIL: " ^ attr) |> failwith)
-      
     end
-  | sigma, Decl (_, _), c, kappa -> evals (sigma, Pass, c, kappa)
-  | sigma, MutableDecl (_, v), c, kappa -> 
+  | Decl (_, _), c -> evals (sigma, Pass, c, kappa)
+  | MutableDecl (_, v), c -> 
     evals ((v, VRef (ref None))::sigma, c, Pass, kappa)
-  | sigma, MemDecl(_, v), c, kappa -> 
+  | MemDecl(_, v), c -> 
       let attrs = lookup sigma "__attrs__" in 
       (match attrs with 
       | VList lst -> let new_sigma = update sigma "__attrs__" (VList((VString(v))::lst)) in 
         evals (new_sigma, Pass, c, kappa) 
       | _ -> failwith "TYPECHECK FAILED: ATTRS NOT A LIST")
-  | sigma, MutableMemDecl(_, v), c, kappa -> 
+  | MutableMemDecl(_, v), c -> 
       let mattrs = lookup sigma "__mattrs__" in 
       (match mattrs with 
       | VList lst -> let new_sigma = update sigma "__mattrs__" (VList(((VString(v))::lst))) in 
         evals (new_sigma, Pass, c, kappa) 
       | _ -> failwith "TYPECHECK FAILED: MATTRS NOT A LIST")
-  | sigma, Block(c1::t), Pass, kappa -> evals (sigma, c1, Block(t), kappa)
-  | sigma, Block(c1::t), c3, kappa -> evals (sigma, c1, Block(t@[c3]), kappa)
+  | Block(c1::t), Pass -> evals (sigma, c1, Block(t), kappa)
+  | Block(c1::t), c3 -> evals (sigma, c1, Block(t@[c3]), kappa)
   
-  | sigma, Block([]), c3, kappa -> evals (sigma, Pass, c3, kappa)
+  | Block([]), c3 -> evals (sigma, Pass, c3, kappa)
 
-  | sigma, If(b,c1,c2), c3, kappa -> let b_result = evale b sigma in 
+  | If(b,c1,c2), c3 -> let b_result = evale b sigma in 
     (match b_result with
     | VBool b' -> if b' 
       then evals (sigma, c1, c3, kappa) 
       else evals (sigma, c2, c3, kappa)
     | _-> failwith "If guard must be a boolean")
 
-  | sigma, While(b, c1), c2, kappa -> 
+  | While(b, c1), c2 -> 
     let b_result = evale b sigma in 
-    (match b_result with
+    begin
+    match b_result with
     | VBool b' -> if b' 
       then 
         let w = While(b, c1) in 
@@ -244,21 +250,27 @@ and evals (conf:configuration) : env =
           | (_,_, s)::t -> s) in 
         evals (sigma, c1, Block([w;c2]), (s_break, s_continue, s_return)::kappa)
       else evals (sigma, Pass, c2, kappa)
-    | _ -> failwith "While guard must be a boolean")
-
-  | sigma, Print(a), c, kappa -> let n = evale a sigma in 
+    | _ -> raise @@ TypecheckerFail "While guard must be a boolean"
+    end
+  | Print(a), c -> let n = evale a sigma in 
     Pprint.print_value n; Format.printf "%s" "\n"; evals (sigma, Pass, c, kappa)
 
-  | sigma, Break, c, (c_b, c_c, _)::kappa_t -> 
-    evals (sigma, c_b, Pass, kappa_t)
-  | sigma, Continue, c, (c_b, c_c, _)::kappa_t -> 
-    evals (sigma, c_c, Pass, kappa_t)
-  | sigma, Return e, _, _ ->  ("return", evale e sigma)::sigma
-  | sigma, Break, c, [] -> failwith "Illegal break"
-  | sigma, Continue, c, [] -> failwith "Illegal continue"
-  | sigma, Def (rt, name, args, body), c, kappa -> 
+  | Break, c -> 
+  begin
+    match kappa with 
+    | (c_b, c_c, _)::kappa_t ->  evals (sigma, c_b, Pass, kappa_t)
+    | _ -> raise IllegalBreak
+  end
+  | Continue, c -> 
+  begin
+    match kappa with
+    | (c_b, c_c, _)::kappa_t -> evals (sigma, c_c, Pass, kappa_t)
+    | _ -> raise IllegalContinue
+  end
+  | Return e, _->  ("return", evale e sigma)::sigma
+  | Def (rt, name, args, body), c -> 
     evals ((name, eval_fun (Def (rt, name, args, body)) sigma)::sigma, Pass, c, kappa)
-  | sigma, Class (name, super, stmt), c, kappa ->
+  | Class (name, super, stmt), c ->
     let new_sigma = ("__mattrs__", VList([]))::("__attrs__", VList([]))::sigma in
     let obj_dict = evals (new_sigma, stmt, Pass, []) in
     let new_dict = (take (List.length obj_dict - List.length sigma)) obj_dict in

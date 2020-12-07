@@ -74,7 +74,7 @@ type value =
   | VBool of bool 
   | VClosure of var list * stmt * env ref
   | VDict of (value * value) list
-  | VTuple of (value * value)
+  | VTuple of value list
   | VObj of (var * value) list
   | VMethodCall of (value * value)
   | VPreObj of (var * value ref) list
