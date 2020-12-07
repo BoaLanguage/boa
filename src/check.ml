@@ -30,6 +30,7 @@ let rec get_type (mappings : gamma) (exp : exp) : typ =
   | Bool b -> TBase "Bool"
   | String s -> TBase "String"
   | Int int -> TBase "Int"
+  | List elist -> get_list_typ mappings elist
   | Var var -> (match List.assoc_opt var mappings with
       | None -> raise (IllTyped "Unbound variable")
       | Some e -> e)
@@ -141,3 +142,13 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma =
   match arg_typs with
   | [] -> ret_typ
   | (arg, _)::rest -> TFun(arg, construct_fn_typ ret_typ rest)
+
+  and get_list_typ mappings explist = 
+  match explist with 
+  | [] -> TBase "None"
+  | el::[] -> TList (get_type mappings el)
+  | el::rest ->
+   let t = (List.fold_right 
+   (fun exp typ -> let t2 = (get_type mappings exp) in 
+   if typ = t2 then t2 else raise @@ IllTyped "List elements of differing types")
+   rest (get_type mappings el)) in TList(t)

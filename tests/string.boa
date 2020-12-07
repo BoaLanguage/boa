@@ -2,6 +2,5 @@ var x : String = "james"
 x = "This is jam.es"
 x = 'thewi'
 let y : String = "thewi"
-print(x)
-print(y)
-print(x + y)
+let y : String list = ['wfe', 'wef', 'wewioewgwe', "weif"]
+z = {'e' : 5, 'bwef': 430}

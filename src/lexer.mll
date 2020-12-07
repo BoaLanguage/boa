@@ -13,7 +13,6 @@ let nls = ['\r' '\n']*
 let str = ['"'] ([^'"'] | ['\\'] ['"'])* ['"']
 let small_str = ['\''] ([^'"'] | ['\\'] ['\''])* ['\'']
 
-
 rule token = parse
 | ws               { token lexbuf }
 | "let"            { LET }
