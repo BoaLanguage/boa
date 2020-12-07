@@ -162,6 +162,7 @@ let rec evale (e : exp) (s : env) : value =
   | Dict expexplist -> evaluate_dict expexplist
   | Skip -> VNone
   | Lam (v, t, e) -> VClosure ([ v ], Return e, ref s)
+  | String s -> VString(s)
   | _ -> raise @@ Unimplemented "Expression evaluation"
 
 and evals (conf : configuration) : env =

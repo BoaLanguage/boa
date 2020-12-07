@@ -46,4 +46,3 @@ $(ODIR)/main.cmo : $(ODIR)/pprint.cmo $(ODIR)/parser.cmi $(ODIR)/lexer.cmo $(ODI
 $(ODIR)/parser.cmo : $(ODIR)/ast.cmo $(ODIR)/parser.cmi
 $(ODIR)/parser.cmi : $(ODIR)/ast.cmo
 $(ODIR)/pprint.cmo : $(ODIR)/ast.cmo
-

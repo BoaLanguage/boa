@@ -10,6 +10,8 @@ let digit = ['0'-'9']
 let id = ['_' 'a'-'z' 'A'-'Z'] ['_' 'A'-'Z' 'a'-'z' '0'-'9']*
 let ws = [' ' '\t']
 let nls = ['\r' '\n']*
+let str = ['"'] ([^'"'] | ['\\'] ['"'])* ['"']
+let small_str = ['\''] ([^'"'] | ['\\'] ['\''])* ['\'']
 
 
 rule token = parse
@@ -67,8 +69,11 @@ rule token = parse
 | "print"          { PRINT }
 | "["              { LBRACK }
 | "]"              { RBRACK }
+| "\""
 | id as v          { VAR(v) }
 | digit+ as n      { INT(int_of_string n) }
+| str as s         { STRING(String.sub s 1 (String.length s - 2)) }
+| small_str as s   { STRING(String.sub s 1 (String.length s - 2)) }
 | eof              { EOF }
 
 | _ as c  {

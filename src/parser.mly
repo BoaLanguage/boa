@@ -19,7 +19,7 @@
   | _ -> Tuple es
 %}
 
-%token <string> VAR TNAME
+%token <string> VAR TNAME STRING
 %token <int> INDENTLEVEL
 %token <int> INT
 %token <bool> BOOL
@@ -126,6 +126,7 @@ expr:
     | lst                               { $1 }
     | dict                              { $1 }
     | bexp                              { $1 }
+    | STRING                            { String($1) }
 
 bexp:
     | expr PLUS expr                      { Binary(Plus, $1, $3) }

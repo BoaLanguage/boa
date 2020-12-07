@@ -28,6 +28,7 @@ let rec lookup_typ (name : var) (gamma : gamma) : typ =
 let rec get_type (mappings : gamma) (exp : exp) : typ = 
   match exp with
   | Bool b -> TBase "Bool"
+  | String s -> TBase "String"
   | Int int -> TBase "Int"
   | Var var -> (match List.assoc_opt var mappings with
       | None -> raise (IllTyped "Unbound variable")
@@ -109,7 +110,11 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma =
     | Some (t) -> if get_type gamma e = t
                   then gamma 
                   else failwith "Incorrect return type")
+  | Print (e) -> 
+    ignore (get_type gamma e); gamma
   | _ -> print_stmt stmt; failwith "u"
+  
+
   end
 
   and get_fn_type mappings fn_typ elist = 
