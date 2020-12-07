@@ -12,11 +12,11 @@ Boa programs can be written in a similar manner to Python programs, with a coupl
 
  - First, currently curly braces must be used to delineate blocks of code, though we hope to transition to using indentation in the future. 
  - Variable declarations can take one of two forms (below, non-bracketed words are langauge keywords). Declarations with the "let" keyword introduce immutable variables, and those with "var" are mutable. 
-   - let [id] : [type] = [expr]
-   - var [id] : [type] = [expr]
- - Function definitions must begin with a "def" keyword, followed by the name of the function, and a parenthesized, comma-separated list of arguments annotated with types (of the form [id] : [type]). After the argument list there must be an arrow '->' pointing to the return type of the function, followed by a newline and a block of code. 
- - Class declarations require a list of all data members at the beginning of the declaration. These data member declarations are variable declarations without an assignment, preceded by the keyword "member" (this will probably be removed in the future). Instance methods must have at least one parameter, which will be passed the object instance upon a method call. Instance initializers are just as they are in Python - there can be a single initializer in a class, and it must be named __init__. Currently, __init__ methods must end with an expression returning "self" (or whatever the first method argument is). Following is the general structure of a class declaration:
-   - class [name]:
+   - `let [id] : [type] = [expr]`
+   - `var [id] : [type] = [expr]`
+ - Function definitions must begin with a "def" keyword, followed by the name of the function, and a parenthesized, comma-separated list of arguments annotated with types (of the form `[id] : [type]`). After the argument list there must be an arrow `->` pointing to the return type of the function, followed by a newline and a block of code. 
+ - Class declarations require a list of all data members at the beginning of the declaration. These data member declarations are variable declarations without an assignment, preceded by the keyword "member" (this will probably be removed in the future). Instance methods must have at least one parameter, which will be passed the object instance upon a method call. Instance initializers are just as they are in Python - there can be a single initializer in a class, and it must be named `__init__`. Currently, `__init__` methods must end with an expression returning "self" (or whatever the first method argument is). Following is the general structure of a class declaration:
+   - ```class [name]:
      {
        member let [id1] : [type]
        member var [id2] : [type]
@@ -28,11 +28,11 @@ Boa programs can be written in a similar manner to Python programs, with a coupl
 
          return self
        }
-     }
+     }```
 
 Here is an example implementation of a vector class in Boa:
 
-def Vector2d
+```class Vector2d
 {
   member let x : Int
   member let y : Int
@@ -58,7 +58,7 @@ let vec1 : Vector2d = Vector2d(10, 20)
 let vec2 : Vector2d = Vector2d(1, 2)
 let vec3 : Vector2d = vec1.add(vec2)
 print (vec3.x)
-print (vec3.y)
+print (vec3.y)```
 
 ## Next Steps
 
