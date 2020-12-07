@@ -53,8 +53,8 @@ let str_of_token token =
     | OR
     | NOT
     | SEMICOLON
-    | NEWLINE -> "Yo"
-    | PRINT ->  "fuck that shit"
+    | NEWLINE -> "newline"
+    | PRINT ->  "Print token"
 
 let rec print_lexbuf l =
   match l with

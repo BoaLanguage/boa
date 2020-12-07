@@ -230,7 +230,7 @@ let rec print_value (v : value) =
       print_value obj;
       Format.printf ".";
       print_value m;
-  | _ -> failwith "Shit"
+  | _ -> failwith "Not Printable"
 
 let rec print_env (s : env) =
   List.iter (fun (var, v) -> Format.printf "\n%s: " var; print_value v) s; ()
