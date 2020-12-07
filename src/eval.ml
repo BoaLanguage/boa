@@ -137,7 +137,11 @@ let rec evale (e : exp) (s : env) : value =
     in
     VTuple value_lst
   in
-  let evaluate_list = evaluate_tuple in
+  let evaluate_list expression_list = 
+    let value_lst =
+      List.map (fun expression -> evale expression s) expression_list
+    in
+    VList value_lst in
   let evaluate_dict kv_expression_list =
     let kv_value_list =
       List.map (fun (k, v) -> (evale k s, evale v s)) kv_expression_list
@@ -238,12 +242,12 @@ and evals (conf : configuration) : env =
         else evals (sigma, Pass, next_statement, kappa)
     | _ -> raise @@ TypecheckerFail "While guard must be a boolean"
   in
-  let evaluate_break =
+  let evaluate_break _ =
     match kappa with
     | (c_b, c_c, _) :: kappa_t -> evals (sigma, c_b, Pass, kappa_t)
     | _ -> raise IllegalBreak
   in
-  let evaluate_continue =
+  let evaluate_continue _ =
     match kappa with
     | (c_b, c_c, _) :: kappa_t -> evals (sigma, c_c, Pass, kappa_t)
     | _ -> raise IllegalContinue
@@ -281,8 +285,8 @@ and evals (conf : configuration) : env =
       Pprint.print_value @@ evale a sigma;
       Format.printf "%s" "\n";
       evals (sigma, Pass, c, kappa)
-  | Break, c -> evaluate_break
-  | Continue, c -> evaluate_continue
+  | Break, c -> evaluate_break ()
+  | Continue, c -> evaluate_continue ()
   | Return e, _ -> ("return", evale e sigma) :: sigma
   | Def (rt, name, args, body), c ->
       evals
