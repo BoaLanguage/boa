@@ -27,7 +27,7 @@
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
 %token EOF LESS GREATER LEQ GEQ NEQ CLASS WHILE MEMBER LIST
 %token COMMA MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
-%token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON PRINT NOP
+%token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON PRINT NOP EOL
 
 %type <Ast.stmt> prog
 
@@ -46,8 +46,8 @@ block:
     | INDENT stmtlist nll DEDENT        { Block($2) }
 
 nll:
-    | NEWLINE                           { [] }   
-    | nll NEWLINE                       { [] }                         
+    | EOL                           { [] }   
+    | nll EOL                       { [] }                         
 
 /* indented_block:
     | indented_stmtlist                 { Block($1) }
@@ -55,12 +55,12 @@ nll:
 indented_stmtlist:
     | INDENT stmt                       { [$2] }
     | indented_stmtlist 
-      NEWLINE INDENT stmt               { $1@[$4] } */
+      EOL INDENT stmt               { $1@[$4] } */
 
 stmtlist: 
     | stmt                              { [$1] }
-    /* | stmtlist NEWLINE                  { $1 } */
-    | stmtlist NEWLINE stmt             { $1@[$3] }
+    /* | stmtlist EOL                  { $1 } */
+    | stmtlist EOL stmt             { $1@[$3] }
 /* 
 ind_block:
     | ind_tuple                         { block_structure $1 0 } */
@@ -88,27 +88,27 @@ stmt:
     | PRINT expr                        { Print ($2) }
     | iff                               { $1 }
     | DEF VAR paramlist ARROW 
-      typ NEWLINE block                 { Def($5, $2, $3, $7) }
-    | WHILE expr NEWLINE block          { While($2, $4) }
-    | FOR VAR IN expr NEWLINE block     { For($2, $4, $6) }
-    | CLASS VAR NEWLINE block           { Class($2, Skip, $4) }
+      typ EOL block                 { Def($5, $2, $3, $7) }
+    | WHILE expr EOL block          { While($2, $4) }
+    | FOR VAR IN expr EOL block     { For($2, $4, $6) }
+    | CLASS VAR EOL block           { Class($2, Skip, $4) }
     | CLASS VAR 
       LPAREN expr RPAREN 
-      NEWLINE block                     { Class($2, $4, $7) }
+      EOL block                     { Class($2, $4, $7) }
     | MEMBER VARKEYWORD VAR COLON typ   { MutableMemDecl($5, $3) }
     | MEMBER LET VAR COLON typ          { MemDecl($5, $3) }
 
 iff:
-    | IF expr NEWLINE 
+    | IF expr EOL 
       block                    { If ($2, $4, Exp(Skip)) }
-    | IF expr NEWLINE            
-      block NEWLINE
-      ELSE NEWLINE
+    | IF expr EOL            
+      block EOL
+      ELSE EOL
       block                    { If ($2, $4, $8) }
 /* 
 elifchain:
-    | ELIF expr NEWLINE block           { If($2, $4, Exp(Skip)) }
-    | elifchain ELIF expr NEWLINE block { If() } */
+    | ELIF expr EOL block           { If($2, $4, Exp(Skip)) }
+    | elifchain ELIF expr EOL block { If() } */
 
 expr:
     | LPAREN expr RPAREN                { $2 }

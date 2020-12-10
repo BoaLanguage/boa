@@ -84,32 +84,35 @@ let rec token_wrapper lexbuf =
   in 
   if !temp_tokens <> [] then 
     let token = List.hd !temp_tokens in 
-    temp_tokens := List.tl !temp_tokens; token 
-  else if !indent_level < 0 then EOF  else
+    temp_tokens := List.tl !temp_tokens; print_endline @@ str_of_token token; token 
+  else if !indent_level < 0 then (print_endline "EOF"; EOF)  else
   let token = Lexer.token lexbuf in 
   match token with 
   | NEWLINE (i) -> 
     begin
       let level = !indent_level in
+      print_endline "EOL";
       if i > level then 
         (indent_level := i;
         dedent_stack := i::!dedent_stack;
-        INDENT)
+        temp_tokens := [INDENT];
+        EOL)
       else if i = level then 
-        token_wrapper lexbuf
+        EOL
       else 
         let new_dedent_stack, dedent_list = find_dedents !dedent_stack i [] in 
         indent_level := i;
         dedent_stack := new_dedent_stack;
         temp_tokens := dedent_list;
-        token_wrapper lexbuf
+        EOL
     end
   | EOF -> let _, dedent_list = find_dedents !dedent_stack 0 [] in 
+        print_int (List.length dedent_list);
         indent_level := -1;
         dedent_stack := [];
         temp_tokens := dedent_list;
-        token_wrapper lexbuf
-  | _ -> token
+        EOL
+  | _ -> print_endline @@ str_of_token token; token
 
 let rec print_tokens token_fun lexbuf = 
   let token = token_fun lexbuf in 
