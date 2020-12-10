@@ -35,15 +35,15 @@
 
 %%
 prog: 
-    | stmtlist COMMA                     { Block($1) }
+    | stmtlist EOF                     { Block($1) }
     /* | stmt 
       ind_tuple EOF                     { block_structure (($1, 0)::$2) 0 } */
 
+iblock:
+    | INDENT block DEDENT               { $2 }
+
 block:
-    | INDENT stmtlist DEDENT            { Block($2) }
-    | INDENT nll stmtlist nll DEDENT    { Block($3) }
-    | INDENT nll stmtlist DEDENT        { Block($3) }
-    | INDENT stmtlist nll DEDENT        { Block($2) }
+    | stmtlist                          { Block($1) }
 
 nll:
     | NEWLINE                           { [] }   
@@ -60,7 +60,7 @@ indented_stmtlist:
 stmtlist: 
     | stmt                              { [$1] }
     /* | stmtlist NEWLINE                  { $1 } */
-    | stmtlist NEWLINE stmt             { $1@[$3] }
+    | stmtlist stmt                     { $1@[$2] }
 /* 
 ind_block:
     | ind_tuple                         { block_structure $1 0 } */
@@ -88,23 +88,22 @@ stmt:
     | PRINT expr                        { Print ($2) }
     | iff                               { $1 }
     | DEF VAR paramlist ARROW 
-      typ NEWLINE block                 { Def($5, $2, $3, $7) }
-    | WHILE expr NEWLINE block          { While($2, $4) }
-    | FOR VAR IN expr NEWLINE block     { For($2, $4, $6) }
-    | CLASS VAR NEWLINE block           { Class($2, Skip, $4) }
+      typ COLON iblock                  { Def($5, $2, $3, $7) }
+    | WHILE expr COLON iblock           { While($2, $4) }
+    | FOR VAR IN expr COLON iblock      { For($2, $4, $6) }
+    | CLASS VAR COLON iblock            { Class($2, Skip, $4) }
     | CLASS VAR 
       LPAREN expr RPAREN 
-      NEWLINE block                     { Class($2, $4, $7) }
+      COLON iblock                      { Class($2, $4, $7) }
     | MEMBER VARKEYWORD VAR COLON typ   { MutableMemDecl($5, $3) }
     | MEMBER LET VAR COLON typ          { MemDecl($5, $3) }
 
 iff:
-    | IF expr NEWLINE 
-      block                    { If ($2, $4, Exp(Skip)) }
-    | IF expr NEWLINE            
-      block NEWLINE
-      ELSE NEWLINE
-      block                    { If ($2, $4, $8) }
+    | IF expr COLON iblock              { If ($2, $4, Exp(Skip)) }
+    /* | IF expr INDENT            
+      block DEDENT
+      ELSE INDENT
+      block DEDENT                    { If ($2, $4, $8) } */
 /* 
 elifchain:
     | ELIF expr NEWLINE block           { If($2, $4, Exp(Skip)) }

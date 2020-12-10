@@ -60,7 +60,9 @@ let rec get_type (mappings : gamma) (exp : exp) : typ =
       | hd::rest -> (match get_type mappings (Tuple rest) with
           | TTuple list -> TTuple ((get_type mappings hd)::list)
           | _ -> raise (IllTyped "Invalid tuple")))
-  | _ -> failwith "Check"
+  | Skip -> TBase("None")
+  | _ -> raise @@ IllTyped("Check")
+
 
 and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma = 
   begin

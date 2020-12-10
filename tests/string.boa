@@ -1,4 +1,5 @@
+let x : Int = 10
 if x > 0:
-  if x > -1:
-    print x
-return done
+  print x
+def test(x : Int) -> Int:
+  return x
