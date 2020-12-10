@@ -1,0 +1,127 @@
+CLASS
+VAR(Vector)
+EOL
+INDENT
+MEMBER
+LET
+VAR(x)
+COLON
+VAR(Int)
+EOL
+MEMBER
+LET
+VAR(y)
+COLON
+VAR(Int)
+EOL
+DEF
+VAR(__init__)
+LPAREN
+VAR(self)
+COLON
+VAR(Vector)
+COMME
+VAR(x)
+COLON
+VAR(Int)
+COMME
+VAR(y)
+COLON
+VAR(Int)
+RPAREN
+ARROW
+VAR(Vector)
+EOL
+INDENT
+VAR(self)
+DOT
+VAR(x)
+EQUALS
+VAR(x)
+EOL
+VAR(self)
+DOT
+VAR(y)
+EQUALS
+VAR(y)
+EOL
+RETURN
+VAR(self)
+EOL
+DEDENT
+EOL
+DEF
+VAR(magnitude)
+LPAREN
+VAR(self)
+COLON
+VAR(Vector)
+RPAREN
+ARROW
+VAR(Int)
+EOL
+INDENT
+RETURN
+LPAREN
+VAR(self)
+DOT
+VAR(x)
+STARSTAR
+INT(2)
+RPAREN
+PLUS
+LPAREN
+VAR(self)
+DOT
+VAR(y)
+STARSTAR
+INT(2)
+RPAREN
+EOL
+DEDENT
+DEDENT
+EOL
+VAR(x)
+EQUALS
+VAR(Vector)
+LPAREN
+INT(2)
+COMME
+INT(0)
+RPAREN
+EOL
+VAR(y)
+EQUALS
+INT(5)
+1EOL
+EOF
+Expression:
+  {Class Vector (subclass of None)
+{DECLS;
+DECLS;
+Function __init__ -> Vector
+{yikes = x;
+yikes = y;
+return: self}
+;
+: pass :;
+Function magnitude -> Int
+{return: yikes;
+}
+}
+;
+: pass :;
+x := Vector(2, 0);
+y := 5;
+: pass :}
+
+
+Type checking skipped.
+
+Evaluating the expression...
+
+Result:
+  
+y: 5
+x: __class__ <- mutable (magnitude <- Some closure, __init__ <- Some closure, __mattrs__ <- , __attrs__ <- y, x, , obj.), y <- 0, x <- 2, obj.
+Vector: mutable (magnitude <- Some closure, __init__ <- Some closure, __mattrs__ <- , __attrs__ <- y, x, , obj.)

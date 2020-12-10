@@ -65,6 +65,8 @@ let str_of_token token =
     | VARKEYWORD -> "VARKEYWORD"
     | STRING s -> "STRING("^ s ^ ")"
     | NOP -> "NOP"
+    | EOL -> "EOL"
+    | _ -> "Pimpy"
 
 let rec print_lexbuf l =
   match l with
@@ -100,13 +102,13 @@ let rec token_wrapper lexbuf =
       else if i = level then 
         EOL
       else 
-        let new_dedent_stack, dedent_list = find_dedents !dedent_stack i [] in 
+        let new_dedent_stack, dedent_list = find_dedents !dedent_stack i [EOL] in 
         indent_level := i;
         dedent_stack := new_dedent_stack;
         temp_tokens := dedent_list;
         EOL
     end
-  | EOF -> let _, dedent_list = find_dedents !dedent_stack 0 [] in 
+  | EOF -> let _, dedent_list = find_dedents !dedent_stack 0 [EOL] in 
         print_int (List.length dedent_list);
         indent_level := -1;
         dedent_stack := [];

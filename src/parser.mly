@@ -58,18 +58,15 @@ indented_stmtlist:
       EOL INDENT stmt               { $1@[$4] } */
 
 stmtlist: 
-    | stmt                              { [$1] }
-    /* | stmtlist EOL                  { $1 } */
-    | stmtlist EOL stmt             { $1@[$3] }
-/* 
-ind_block:
-    | ind_tuple                         { block_structure $1 0 } */
-/* 
-ind_tuple:
-    | INDENTLEVEL stmt                  { [($2, $1)] }
-    | ind_tuple INDENTLEVEL stmt        { $1@[($3, $2)] } */
+    | stmt_newline                      { [$1] }
+    | stmtlist stmt_newline             { $1@[$2] }
 
-stmt:
+stmt_newline:
+    | simple_stmt EOL                  { $1 }
+    | compound_stmt                    { $1 }
+    | EOL                              { Pass }
+
+simple_stmt:
    |  expr                              { Exp($1) }
    /* |  thint                             { Decl(fst $1, snd $1) } */
    |  expr DOT VAR EQUALS expr          { AttrAssgn($1, $3, $5) }
@@ -86,25 +83,27 @@ stmt:
       EQUALS expr                       { SliceAssgn($1, $3, $6) }
     | RETURN expr                       { Return ($2) }
     | PRINT expr                        { Print ($2) }
-    | iff                               { $1 }
-    | DEF VAR paramlist ARROW 
-      typ EOL block                 { Def($5, $2, $3, $7) }
-    | WHILE expr EOL block          { While($2, $4) }
-    | FOR VAR IN expr EOL block     { For($2, $4, $6) }
-    | CLASS VAR EOL block           { Class($2, Skip, $4) }
-    | CLASS VAR 
-      LPAREN expr RPAREN 
-      EOL block                     { Class($2, $4, $7) }
     | MEMBER VARKEYWORD VAR COLON typ   { MutableMemDecl($5, $3) }
     | MEMBER LET VAR COLON typ          { MemDecl($5, $3) }
 
+compound_stmt:
+    | iff                               { $1 }
+    | DEF VAR paramlist ARROW 
+      typ EOL iblock                     { Def($5, $2, $3, $7) }
+    | WHILE expr EOL iblock              { While($2, $4) }
+    | FOR VAR IN expr EOL iblock         { For($2, $4, $6) }
+    | CLASS VAR EOL iblock               { Class($2, Skip, $4) }
+    | CLASS VAR 
+      LPAREN expr RPAREN 
+      EOL iblock                         { Class($2, $4, $7) }
+
 iff:
     | IF expr EOL 
-      block                    { If ($2, $4, Exp(Skip)) }
-    | IF expr EOL            
+      iblock                    { If ($2, $4, Exp(Skip)) }
+    /* | IF expr EOL            
       block EOL
       ELSE EOL
-      block                    { If ($2, $4, $8) }
+      block                    { If ($2, $4, $8) } */
 /* 
 elifchain:
     | ELIF expr EOL block           { If($2, $4, Exp(Skip)) }
