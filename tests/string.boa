@@ -1,13 +1,18 @@
-class Vector
+class Vector:
 
   member let x : Int
 
   member let y : Int
-  def __init__(self : Vector, x : Int, y : Int) -> Vector
+
+  def __init__(self : Vector, x : Int, y : Int) -> Vector:
     self.x = x
     self.y = y
+
     return self
-  def magnitude(self : Vector) -> Int
+
+  def magnitude(self : Vector) -> Int:
     return (self.x ** 2) + (self.y ** 2)
+
+
 x = Vector(2, 0)
-y = 5
+print x.magnitude()

@@ -4,6 +4,13 @@ open Printf
 open String
 exception Eof
 exception Err
+
+let get_indent_level nlseq = 
+  
+   let lst = String.split_on_char '\n' nlseq in 
+   let inds = List.nth lst (List.length lst - 1) in 
+  String.length inds
+ 
 }
  
 let digit = ['0'-'9']
@@ -11,14 +18,14 @@ let id = ['_' 'a'-'z' 'A'-'Z'] ['_' 'A'-'Z' 'a'-'z' '0'-'9']*
 let ws = [' ']
 let str = ['"'] ([^'"'] | ['\\'] ['"'])* ['"']
 let small_str = ['\''] ([^'"'] | ['\\'] ['\''])* ['\'']
-let nl = ['\n']+ ([' ']* | ['\t']*)
+let nl = ['\n'] ( ( ['\t'] | [' '] )* ['\n'] )* ( ['\t'] | [' '] )*
 let bs = [' ']
 
 rule token = parse
 | ws               { token lexbuf }
 | "let"            { LET }
 | "var"            { VARKEYWORD }
-| nl as s          { NEWLINE(String.length s - 1) }
+| nl as s          { NEWLINE(get_indent_level s) }
 | "("              { LPAREN }
 | ")"              { RPAREN }
 | "."              { DOT }

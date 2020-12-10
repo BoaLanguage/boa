@@ -87,23 +87,23 @@ simple_stmt:
     | MEMBER LET VAR COLON typ          { MemDecl($5, $3) }
 
 compound_stmt:
-    | iff                               { $1 }
+    | iff                                { $1 }
     | DEF VAR paramlist ARROW 
-      typ EOL iblock                     { Def($5, $2, $3, $7) }
-    | WHILE expr EOL iblock              { While($2, $4) }
-    | FOR VAR IN expr EOL iblock         { For($2, $4, $6) }
-    | CLASS VAR EOL iblock               { Class($2, Skip, $4) }
+      typ COLON EOL iblock               { Def($5, $2, $3, $8) }
+    | WHILE expr COLON EOL iblock        { While($2, $5) }
+    | FOR VAR IN expr COLON EOL iblock   { For($2, $4, $7) }
+    | CLASS VAR COLON EOL iblock         { Class($2, Skip, $5) }
     | CLASS VAR 
       LPAREN expr RPAREN 
-      EOL iblock                         { Class($2, $4, $7) }
+      COLON EOL iblock                   { Class($2, $4, $8) }
 
 iff:
-    | IF expr EOL 
-      iblock                    { If ($2, $4, Exp(Skip)) }
-    /* | IF expr EOL            
-      block EOL
-      ELSE EOL
-      block                    { If ($2, $4, $8) } */
+    | IF expr COLON EOL 
+      iblock                    { If ($2, $5, Exp(Skip)) }
+    | IF expr COLON EOL             
+      iblock EOL
+      ELSE COLON EOL
+      iblock                    { If ($2, $5, $10) }
 /* 
 elifchain:
     | ELIF expr EOL block           { If($2, $4, Exp(Skip)) }
