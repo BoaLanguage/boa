@@ -11,55 +11,83 @@ let options = [
 
 let str_of_token token = 
   match token with
-    | VAR (s) -> "SOME VARIABLE " ^ s
-    | TNAME (s) -> s
-    | INDENTLEVEL (i) -> string_of_int i
-    | INT (i) -> string_of_int i
-    | BOOL (b) -> string_of_bool b
-    | LPAREN -> "("
-    | RPAREN -> ")"
-    | LBRACK -> "["
-    | RBRACK -> "]"
-    | DOT -> "."
-    | COLON -> ":"
-    | COMMA -> ","
-    | NLS -> "NLS"
-    | ARROW -> "->"
+    | VAR (s) -> "VAR("^s^")"
+    | TNAME (s) -> "TNAME("^s^")"
+    | INT (i) -> "INT("^string_of_int i^")"
+    | BOOL (b) -> "BOOL("^string_of_bool b^")"
+    | LPAREN -> "LPAREN"
+    | RPAREN -> "RPAREN"
+    | LBRACK -> "LBRACK"
+    | RBRACK -> "RBRACK"
+    | DOT -> "DOT"
+    | COLON -> "COLON"
+    | COMMA -> "COMME"
+    | ARROW -> "ARROW"
     | LAMBDA -> "LAMBDA"
-    | EQUALS -> "="
-    | EQUALSEQUALS -> "=="
-    | DEF
-    | IS
-    | IN
-    | PLUS
-    | MINUS
-    | EOF
-    | LESS
-    | GREATER
-    | LEQ
-    | GEQ
-    | NEQ
-    | MOD
-    | INTDIV
-    | DIV
-    | RETURN
-    | INDENT
-    | STAR
-    | STARSTAR
-    | IF
-    | ELSE
-    | ELIF
-    | AND
-    | OR
-    | NOT
-    | SEMICOLON
-    | NEWLINE -> "newline"
-    | PRINT ->  "Print token"
+    | EQUALS -> "EQUALS"
+    | EQUALSEQUALS -> "EQUALSEQUALS"
+    | DEF -> "DEF"
+    | IS -> "IS"
+    | IN -> "IN"
+    | PLUS -> "PLUS"
+    | MINUS -> "MINUS"
+    | EOF -> "END OF FILE"
+    | LESS -> "LESS"
+    | GREATER -> "GREATER"
+    | LEQ -> "LEQ"
+    | GEQ -> "GEQ"
+    | NEQ -> "NEQ"
+    | MOD -> "MOD"
+    | INTDIV -> "INTDIV"
+    | DIV -> "DIV"
+    | RETURN -> "RETURN"
+    | INDENT -> "INDENT"
+    | STAR -> "STAR"
+    | STARSTAR -> "STARSTAR"
+    | IF -> "IF"
+    | ELSE -> "ELSE"
+    | ELIF -> "ELIF"
+    | AND -> "AND"
+    | OR -> "OR"
+    | NOT -> "NOT"
+    | SEMICOLON -> "SEMICOLON"
+    | NEWLINE (i) -> "NEWLINE("^string_of_int i^")"
+    | PRINT ->  "PRINT"
+    | FOR -> "FOR"
+    | CLASS -> "CLASS"
+    | LIST -> "LIST"
+    | WHILE -> "WHILE"
+    | MEMBER -> "MEMBER"
+    | DEDENT  -> "DEDDENT"
+    | LET -> "LET"
+    | VARKEYWORD -> "VARKEYWORD"
+    | STRING s -> "STRING("^ s ^ ")"
+    | NOP -> "NOP"
 
 let rec print_lexbuf l =
   match l with
-  | l when l.Lexing.lex_buffer_len = l.Lexing.lex_curr_pos -> ignore (Lexer.token l); Format.printf "%d"
-  | l -> (Lexer.token l |> str_of_token |> Format.printf "%s"); print_lexbuf l
+  | l when l.Lexing.lex_eof_reached -> ignore (Lexer.token l);
+  | l -> (Lexer.token l |> str_of_token |> Format.printf "%s "); print_lexbuf l
+
+let indent_level = ref 0
+let dedent_stack : token list ref = ref []
+
+let token_wrapper lexbuf = 
+  let token = Lexer.token lexbuf in 
+  let dedents = !dedent_stack in 
+  match token with 
+  | NEWLINE (i) -> 
+    begin
+      let level = !indent_level in
+      if i > level then 
+        (indent_level := i;
+        dedent_stack := !dedent_stack + 1;
+        INDENT)
+      else (if i = level then 
+        NOP
+      else DEDENT)
+    end
+  | _ -> token
 
 let () =
   (* (1) Parse the command-line arguments. *)
@@ -75,9 +103,8 @@ let () =
   let file = open_in (!filename) in
   let lexbuf = Lexing.from_channel file in
   let e =
-    (* Format.printf "%s\n" ((Lexer.token lexbuf) |> str_of_token);
-    Format.printf "%s\n" ((Lexer.token lexbuf) |> str_of_token); *)
-    (Format.printf "%s\n" (Lexing.lexeme lexbuf));
+    (print_lexbuf lexbuf);
+    Format.printf "\n---END_LEX--";
     try Parser.prog Lexer.token lexbuf
     with Parsing.Parse_error ->
       let pos = lexbuf.Lexing.lex_curr_p in

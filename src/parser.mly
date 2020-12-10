@@ -20,14 +20,14 @@
 %}
 
 %token <string> VAR TNAME STRING
-%token <int> INDENTLEVEL
+%token <int> NEWLINE
 %token <int> INT
 %token <bool> BOOL
-%token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA NLS FOR
+%token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA FOR
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
 %token EOF LESS GREATER LEQ GEQ NEQ CLASS WHILE MEMBER LIST
 %token COMMA MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
-%token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON NEWLINE PRINT
+%token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON PRINT NOP
 
 %type <Ast.stmt> prog
 
@@ -35,7 +35,7 @@
 
 %%
 prog: 
-    | stmtlist EOF                     { Block($1) }
+    | stmtlist COMMA                     { Block($1) }
     /* | stmt 
       ind_tuple EOF                     { block_structure (($1, 0)::$2) 0 } */
 
@@ -95,8 +95,8 @@ stmt:
     | CLASS VAR 
       LPAREN expr RPAREN 
       NEWLINE block                     { Class($2, $4, $7) }
-    | MEMBER VARKEYWORD VAR COLON typ         { MutableMemDecl($5, $3) }
-    | MEMBER LET VAR COLON typ                { MemDecl($5, $3) }
+    | MEMBER VARKEYWORD VAR COLON typ   { MutableMemDecl($5, $3) }
+    | MEMBER LET VAR COLON typ          { MemDecl($5, $3) }
 
 iff:
     | IF expr NEWLINE 

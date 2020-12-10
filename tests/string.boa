@@ -1,5 +1,4 @@
-var x : String = "james"
-x = "This is jam.es"
-x = 'thewi'
-let y : String = "thewi"
-let y : String list = ['wfe', 'wef', '', "weif"]
+if x > 0:
+  if x > -1:
+    print x
+return done

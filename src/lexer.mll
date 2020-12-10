@@ -8,27 +8,20 @@ exception Err
  
 let digit = ['0'-'9']
 let id = ['_' 'a'-'z' 'A'-'Z'] ['_' 'A'-'Z' 'a'-'z' '0'-'9']*
-let ws = [' ' '\t']
-let nls = ['\r' '\n']*
+let ws = [' ']
 let str = ['"'] ([^'"'] | ['\\'] ['"'])* ['"']
 let small_str = ['\''] ([^'"'] | ['\\'] ['\''])* ['\'']
+let nl = ['\n'] ([' ']* | ['\t']*)
+let bs = [' ']
 
 rule token = parse
 | ws               { token lexbuf }
 | "let"            { LET }
 | "var"            { VARKEYWORD }
-| ['\n']+          { NEWLINE }
-| "{"              { INDENT }
-| "}"              { DEDENT }
-(* | ['\n']+[' ' '\t']+ as s 
-                   { INDENTLEVEL(String.length s) } *)
-| nls              { NLS }
+| nl as s          { NEWLINE(String.length s - 1) }
 | "("              { LPAREN }
-(* | "_"              { INDENT } *)
 | ")"              { RPAREN }
 | "."              { DOT }
-(* | "'"              { SMALLQUOTE }
-| "\""             { BIGQUOTE }  *)
 | ";"              { SEMICOLON }
 | ":"              { COLON }
 | "->"             { ARROW }
