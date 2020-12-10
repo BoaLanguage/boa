@@ -130,9 +130,9 @@ let () =
   let file = open_in (!filename) in
   let lexbuf = Lexing.from_channel file in
   let e =
-    print_tokens token_wrapper lexbuf;
-    Format.printf "\n---END_LEX--";
-    try Parser.prog Lexer.token lexbuf
+    (* print_tokens token_wrapper lexbuf;
+    Format.printf "\n---END_LEX--"; *)
+    try Parser.prog token_wrapper lexbuf
     with Parsing.Parse_error ->
       let pos = lexbuf.Lexing.lex_curr_p in
       Format.printf "Syntax error at %d:%d\n"
