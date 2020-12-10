@@ -296,6 +296,7 @@ and evals (conf : configuration) : env =
           c,
           kappa )
   | Class (name, super, stmt), c -> evaluate_class name super stmt
+  | Exp (e), c -> evale e; evals (sigma, Pass, c, kappa)
   | _ -> raise @@ Unimplemented "Statement"
 
 and call (callable : value) (args : value list) : value =

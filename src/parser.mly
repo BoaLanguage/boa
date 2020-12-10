@@ -133,7 +133,7 @@ bexp:
     | expr GREATER expr                   { Binary(Greater, $1, $3) }
     | expr AND expr                       { Binary(And, $1, $3) }
     | expr OR expr                        { Binary(Or, $1, $3) }
-    | expr EQUALS expr                    { Binary(Equal, $1, $3) }
+    | expr EQUALSEQUALS expr                    { Binary(Equal, $1, $3) }
     | expr STAR expr                      { Binary(Times, $1, $3) }
     | expr MINUS expr                     { Binary(Minus, $1, $3) }
     | expr DIV expr                       { Binary(Divide, $1, $3) }

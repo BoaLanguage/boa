@@ -1,8 +1,7 @@
 class Vector:
 
-  member let x : Int
-
-  member let y : Int
+  member var x : Int
+  member var y : Int
 
   def __init__(self : Vector, x : Int, y : Int) -> Vector:
     self.x = x
@@ -10,9 +9,21 @@ class Vector:
 
     return self
 
-  def magnitude(self : Vector) -> Int:
-    return (self.x ** 2) + (self.y ** 2)
+  def add(self : Vector, other : Vector) -> Vector:
+    self.x = self.x + other.x
+    self.y = self.y + other.y
 
+    return self
 
-x = Vector(2, 0)
-print x.magnitude()
+  def mult(self : Vector, c : Int) -> Vector:
+    self.x = self.x * c
+    self.y = self.y * c
+
+    return self
+
+x = Vector(1, 4)
+adder = Vector(1, 1)
+
+while True:
+  print("_ . _")
+  x.add(adder)
