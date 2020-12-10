@@ -35,15 +35,15 @@
 
 %%
 prog: 
-    | stmtlist COMMA                     { Block($1) }
+    | stmtlist EOF                     { Block($1) }
     /* | stmt 
       ind_tuple EOF                     { block_structure (($1, 0)::$2) 0 } */
 
+iblock:
+    | INDENT block DEDENT               { $2 }
+
 block:
-    | INDENT stmtlist DEDENT            { Block($2) }
-    | INDENT nll stmtlist nll DEDENT    { Block($3) }
-    | INDENT nll stmtlist DEDENT        { Block($3) }
-    | INDENT stmtlist nll DEDENT        { Block($2) }
+    | stmtlist                          { Block($1) }
 
 nll:
     | EOL                           { [] }   

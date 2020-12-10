@@ -60,7 +60,7 @@ let str_of_token token =
     | LIST -> "LIST"
     | WHILE -> "WHILE"
     | MEMBER -> "MEMBER"
-    | DEDENT  -> "DEDDENT"
+    | DEDENT  -> "DEDENT"
     | LET -> "LET"
     | VARKEYWORD -> "VARKEYWORD"
     | STRING s -> "STRING("^ s ^ ")"
