@@ -20,12 +20,19 @@ let rec sub tvar sigma : typ =
   begin
     match sigma with 
     | [] -> tv
-    | (tv, typ)::rest -> if tv = tvar then typ else sub tvar rest
+    | (tv2, typ)::rest when tv = tv2 -> typ
+    | (typ, tv2)::rest when tv2 = tv -> typ
+    | _::rest -> sub tvar rest
   end
   | TBase s as typ -> typ
   | TFun(t1, t2) -> TFun(sub t1 sigma, sub t2 sigma)
   | TList t -> TList(sub t sigma)
   | TTuple lst -> TTuple(List.map (fun t -> sub t sigma) lst)
+
+let rec apply_sub constrs subst : constr = 
+  match constrs with 
+  | (t1, t2)::rest -> (sub t1 subst, sub t2 subst)::(apply_sub rest subst)
+  | [] -> []
 
 (* returns whether or not tv1 is a free variable of tv2 *)
 let rec is_typevar_fv tv1 tv2 : bool = 
@@ -131,6 +138,7 @@ let rec get_constrs (mappings : gamma) (constraints : constr) (tv : int) (exp : 
   | _ -> raise @@ IllTyped("Check")
 
 and unify (c : constr) : substitution = 
+(* Format.printf "\n-C-\n%s\n-END-" (str_of_constr c); *)
   match c with 
   | [] -> []
   | (t, t')::rest -> 
@@ -140,16 +148,21 @@ and unify (c : constr) : substitution =
     begin
       match t, t' with 
       | TVar i as tau, tau' when not (is_typevar_fv tau tau') -> 
-        (t, t')::(unify rest)
+        let new_subst = [(t, t')] in 
+        (unify (apply_sub rest new_subst))@new_subst
       | (tau), (TVar i as tau') when not (is_typevar_fv tau' tau) -> 
-        (t', t)::(unify rest)
+        let new_subst = [(t', t)] in 
+        (unify (apply_sub rest new_subst))@new_subst
       | TFun (t1, t2), TFun (t1', t2') -> 
-        unify ((t1, t1')::(t2, t2')::rest)
+        unify ([(t1, t1')]@[(t2, t2')]@rest)
       | _ -> raise @@ IllTyped "Type inference fail"
     end
 
 and get_type mappings exp = 
     let tau, c = get_constrs mappings [] 0 exp in 
+    Format.printf "\nPRE_UNIFY\n%s\n" (str_of_constr (c));
+    Format.printf "\nPOST_UNIFY\n%s\n" (str_of_constr (unify c));
+    Format.printf "\nTYPE_ASSGN\n%s\n" (str_of_typ tau);
     sub tau (unify c)
 
 and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma = 
@@ -236,14 +249,14 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma =
     | e::[] -> 
     begin
       let arg_typ, arg_constr = get_constrs mappings constr (tv + 1) e in 
-        (fresh, [(fn_typ, TFun(arg_typ, fresh))]@arg_constr@constr)
+        (fresh, arg_constr@constr@[(fn_typ, TFun(arg_typ, fresh))])
     end
     | e::rest -> 
     begin
       let hof_typ, hof_constr = get_fn_app_typ mappings constr (tv + 1) fn_typ rest in 
-        (fresh, hof_constr@constr)
+        (fresh, constr@hof_constr)
     end
-    | [] -> (fresh, [(fn_typ, TFun(TBase("Unit"), fresh))]@constr)
+    | [] -> (fresh, constr@[(fn_typ, TFun(TBase("Unit"), fresh))])
 
   and construct_fn_typ ret_typ arg_typs = 
   match arg_typs with
