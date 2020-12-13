@@ -1,2 +1,2 @@
-let y = lambda x -> x
-let z = y(10)
+let pp = lambda f -> (lambda x -> f(x + 1))
+let p = pp(lambda x -> x > 2)

@@ -85,7 +85,7 @@ let str_of_typ t =
     match t with
     | TBase s -> s
     | TFun (t1, t2) ->
-      (loop t1) ^ " -> " ^ (loop t2)
+      "(" ^ (loop t1) ^ " -> " ^ (loop t2) ^ ")"
     | TTuple lst ->
       List.fold_left (fun acc t -> acc ^ " * " ^ (loop t)) "" lst
     | TList tl ->

@@ -20,7 +20,7 @@ let rec sub tvar sigma : typ =
   begin
     match sigma with 
     | [] -> tv
-    | (tv, typ)::rest -> typ
+    | (tv, typ)::rest -> if tv = tvar then typ else sub tvar rest
   end
   | TBase s as typ -> typ
   | TFun(t1, t2) -> TFun(sub t1 sigma, sub t2 sigma)
@@ -33,7 +33,7 @@ let rec is_typevar_fv tv1 tv2 : bool =
   | TVar(i) as tau -> 
   begin
     match tv2 with 
-    | TVar i2 -> i <> i2
+    | TVar i2 -> i = i2
     | TFun (t1, t2) -> is_typevar_fv tau t1 || is_typevar_fv tau t2
     | TBase s -> false
     | TTuple lst -> 
@@ -87,13 +87,15 @@ let rec get_constrs (mappings : gamma) (constraints : constr) (tv : int) (exp : 
       | Some e -> (e, constraints))
   | Call (e1, elist) -> 
     let (fn_typ, fn_constr) = get_constrs mappings constraints (tv + 1) e1 in 
-      get_fn_app_typ mappings constraints (tv + 1) fn_typ elist
-  | Lam (v, None, exp) ->
-    let lambda_expr_type, lambda_expr_constr = get_constrs ((v, fresh)::mappings) constraints (tv + 1) exp in 
-    (TFun(fresh, lambda_expr_type), lambda_expr_constr)
-  | Lam (v, Some t, exp) ->
-    let lambda_expr_type, lambda_expr_constr = get_constrs ((v, fresh)::mappings) constraints (tv + 1) exp in 
-    (TFun(fresh, lambda_expr_type), (fresh, t)::lambda_expr_constr)
+      get_fn_app_typ mappings constraints (tv + 1) fn_typ elist 
+  | Lam (v, None, e) ->
+    let lambda_expr_type, lambda_expr_constr = get_constrs ((v, fresh)::mappings) constraints (tv + 1) e in 
+    let (r, c) = (TFun(fresh, lambda_expr_type), lambda_expr_constr) in 
+    (r, c)
+  | Lam (v, Some t, e) ->
+    let lambda_expr_type, lambda_expr_constr = get_constrs ((v, fresh)::mappings) constraints (tv + 1) e in 
+    let (r,c) = (TFun(fresh, lambda_expr_type), (fresh, t)::lambda_expr_constr) in 
+    (r, c)
   | Let (v, e1, e2) -> 
     let exp_typ, exp_constr = get_constrs mappings constraints (tv + 1) e2 in 
       (exp_typ, exp_constr)
@@ -132,7 +134,7 @@ and unify (c : constr) : substitution =
   match c with 
   | [] -> []
   | (t, t')::rest -> 
-    if t = t' || (is_typ_tvar t && is_typ_tvar t') then 
+    if t = t' then 
     unify rest
     else 
     begin
@@ -228,7 +230,7 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma =
   | _ -> print_stmt stmt; failwith "u"
   end
 
-  and get_fn_app_typ mappings constr tv fn_typ elist = 
+  and get_fn_app_typ mappings constr tv fn_typ elist : typ * constr = 
     let fresh = TVar(tv) in 
     match elist with 
     | e::[] -> 
