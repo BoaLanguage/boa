@@ -128,7 +128,8 @@ expr:
     | NOT expr                          { Unary(Not, $2) }
     | MINUS expr                        { Unary(Neg, $2) }
     | BOOL                              { Bool($1) }
-    | LAMBDA thint ARROW expr           { Lam(snd $2, fst $2, $4) }
+    | LAMBDA thint ARROW expr           { Lam(snd $2, Some(fst $2), $4) }
+    | LAMBDA VAR ARROW expr             { Lam($2, None, $4) }
     | tuple                             { $1 }
     | lst                               { $1 }
     | dict                              { $1 }

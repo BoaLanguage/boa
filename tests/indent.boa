@@ -1,5 +1,2 @@
-let x = 10
-let y = "S"
-let z = y
-let p = 6
-let zz = p + x
+let y = lambda x -> x
+let z = y(10)

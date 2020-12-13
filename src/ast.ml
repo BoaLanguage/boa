@@ -40,7 +40,7 @@ type exp =
   | Bool of bool
   | Int of int
   | String of string
-  | Lam of var * typ * exp
+  | Lam of var * (typ option) * exp
   | Let of var * exp * exp
   | Tuple of exp list
   | List of exp list 

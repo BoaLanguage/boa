@@ -10,6 +10,10 @@ type substitution = (typ * typ) list
 let rec str_of_gamma = 
   List.fold_left (fun acc (v, t) -> acc ^ ", " ^ v ^ " => " ^ (str_of_typ t)) ""
 
+let rec str_of_constr = 
+  List.fold_left 
+  (fun acc (t1, t2) -> acc ^ ", " ^ (str_of_typ t1) ^ " == " ^ (str_of_typ t2)) ""
+
 let rec sub tvar sigma : typ = 
   match tvar with 
   | TVar (i) as tv -> 
@@ -84,9 +88,12 @@ let rec get_constrs (mappings : gamma) (constraints : constr) (tv : int) (exp : 
   | Call (e1, elist) -> 
     let (fn_typ, fn_constr) = get_constrs mappings constraints (tv + 1) e1 in 
       get_fn_app_typ mappings constraints (tv + 1) fn_typ elist
-  | Lam (v, t, exp) ->
+  | Lam (v, None, exp) ->
     let lambda_expr_type, lambda_expr_constr = get_constrs ((v, fresh)::mappings) constraints (tv + 1) exp in 
     (TFun(fresh, lambda_expr_type), lambda_expr_constr)
+  | Lam (v, Some t, exp) ->
+    let lambda_expr_type, lambda_expr_constr = get_constrs ((v, fresh)::mappings) constraints (tv + 1) exp in 
+    (TFun(fresh, lambda_expr_type), (fresh, t)::lambda_expr_constr)
   | Let (v, e1, e2) -> 
     let exp_typ, exp_constr = get_constrs mappings constraints (tv + 1) e2 in 
       (exp_typ, exp_constr)
@@ -125,7 +132,7 @@ and unify (c : constr) : substitution =
   match c with 
   | [] -> []
   | (t, t')::rest -> 
-    if t = t' then 
+    if t = t' || (is_typ_tvar t && is_typ_tvar t') then 
     unify rest
     else 
     begin
