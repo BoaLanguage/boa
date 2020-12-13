@@ -7,6 +7,10 @@ type gamma = (var * typ) list
 type constr = (typ * typ) list
 type substitution = (typ * typ) list
 
+let latest_tvar = ref (-1)
+
+let fresh_tvar () = latest_tvar := !latest_tvar + 1; TVar(!latest_tvar)
+
 let rec str_of_gamma = 
   List.fold_left (fun acc (v, t) -> acc ^ ", " ^ v ^ " => " ^ (str_of_typ t)) ""
 
@@ -82,60 +86,58 @@ let rec lookup_typ (name : var) (gamma : gamma) : typ option =
 
 let type_var (t : typ) c n : typ * constr = (TVar(n + 1), (t, TVar(n + 1))::c)
 
-let rec get_constrs (mappings : gamma) (constraints : constr) (tv : int) (exp : exp) : typ * constr * int = 
-  let fresh = TVar(tv) in 
+let rec get_constrs (mappings : gamma) (constraints : constr) (exp : exp) : typ * constr = 
   match exp with
-  | Bool b -> (TBase("Bool"), constraints, tv)
-  | String s -> (TBase("String"), constraints, tv)
-  | Int int -> (TBase("Int"), constraints, tv)
+  | Bool b -> (TBase("Bool"), constraints)
+  | String s -> (TBase("String"), constraints)
+  | Int int -> (TBase("Int"), constraints)
   (* | List elist -> get_list_typ mappings elist *)
   | Var var -> (match List.assoc_opt var mappings with
       | None -> raise (IllTyped "Unbound variable")
-      | Some e -> (e, constraints, tv))
+      | Some e -> (e, constraints))
   | Call (e1, elist) -> 
-    let (fn_typ, fn_constr, new_tv) = get_constrs mappings constraints (tv + 1) e1 in 
-      Format.printf "%s\n" (str_of_constr fn_constr);
-      get_fn_app_typ mappings (fn_constr) (new_tv + 1) fn_typ elist 
+    let (fn_typ, fn_constr) = get_constrs mappings constraints e1 in 
+      (* Format.printf "%s\n" (str_of_constr fn_constr); *)
+      get_fn_app_typ mappings (fn_constr) fn_typ elist 
   | Lam (v, None, e) ->
-    let lambda_expr_type, lambda_expr_constr, new_tv = get_constrs ((v, fresh)::mappings) constraints (tv + 1) e in 
-    let (r, c) = (TFun(fresh, lambda_expr_type), lambda_expr_constr) in 
-    (r, c, new_tv)
+    let fresh = fresh_tvar () in 
+    let lambda_expr_type, lambda_expr_constr = get_constrs ((v, fresh)::mappings) constraints e in 
+      (TFun(fresh, lambda_expr_type), lambda_expr_constr)
   | Lam (v, Some t, e) ->
-    let lambda_expr_type, lambda_expr_constr, new_tv = get_constrs ((v, fresh)::mappings) constraints (tv + 1) e in 
-    let (r,c) = (TFun(fresh, lambda_expr_type), (fresh, t)::lambda_expr_constr) in 
-    (r, c, new_tv)
+    let fresh = fresh_tvar () in 
+    let lambda_expr_type, lambda_expr_constr = get_constrs ((v, fresh)::mappings) constraints e in 
+    (TFun(fresh, lambda_expr_type), (fresh, t)::lambda_expr_constr)
   | Let (v, e1, e2) -> 
-    let exp_typ, exp_constr, new_tv = get_constrs mappings constraints (tv + 1) e2 in 
-      (exp_typ, exp_constr, new_tv)
+      get_constrs mappings constraints e2 
   | Binary (binop, e1, e2) -> 
-    let t1, c1, tv1 = get_constrs mappings constraints (tv + 1) e1 in 
-    let t2, c2, tv2 = get_constrs mappings constraints (tv1 + 1) e2 in 
+    let t1, c1 = get_constrs mappings constraints e1 in 
+    let t2, c2 = get_constrs mappings constraints e2 in 
     (match binop with
      | Plus
      | Times
-     | Minus -> (TBase("Int"), [(t1, TBase("Int")); (t1, TBase("Int"))]@c1@c2, tv2)
+     | Minus -> (TBase("Int"), [(t1, TBase("Int")); (t1, TBase("Int"))]@c1@c2)
      | Less
      | Equal
-     | Greater -> (TBase("Bool"), [(t1, TBase("Int")); (t1, TBase("Int"))]@c1@c2, tv2)
+     | Greater -> (TBase("Bool"), [(t1, TBase("Int")); (t1, TBase("Int"))]@c1@c2)
      | And
-     | Or -> (TBase("Bool"), [(t1, TBase("Bool")); (t1, TBase("Bool"))]@c1@c2, tv2)
+     | Or -> (TBase("Bool"), [(t1, TBase("Bool")); (t1, TBase("Bool"))]@c1@c2)
      | _ -> failwith "Check")
   | Unary (unop, exp) -> 
   begin
-    let t1, c, new_tv = get_constrs mappings constraints (tv + 1) exp in 
+    let t1, c = get_constrs mappings constraints exp in 
     (match unop with 
-    | Not -> (t1, [(t1, TBase("Bool"))]@c, new_tv)
-    | Neg -> (t1, [(t1, TBase("Int"))]@c, new_tv))
+    | Not -> (t1, [(t1, TBase("Bool"))]@c)
+    | Neg -> (t1, [(t1, TBase("Int"))]@c))
   end
   | Tuple eList -> (match eList with
-      | [] -> (TTuple [], constraints, tv)
+      | [] -> (TTuple [], constraints)
       | hd::rest -> 
-        let tup_typ, tup_c, new_tv = get_constrs mappings constraints (tv + 1) (Tuple(rest)) in 
-        let el_typ, el_c, tv2 = get_constrs mappings constraints (new_tv + 1) hd in 
+        let tup_typ, tup_c = get_constrs mappings constraints (Tuple(rest)) in 
+        let el_typ, el_c = get_constrs mappings constraints hd in 
         (match tup_typ with 
-        | TTuple lst -> (TTuple(el_typ::lst), el_c@tup_c, tv2)
+        | TTuple lst -> (TTuple(el_typ::lst), el_c@tup_c)
         | _ -> raise @@ IllTyped "Not a tuple"))
-  | Skip -> (TBase("None"), constraints, tv)
+  | Skip -> (TBase("None"), constraints)
   | _ -> raise @@ IllTyped("Check")
 
 and unify (c : constr) : substitution = 
@@ -160,36 +162,36 @@ and unify (c : constr) : substitution =
       raise @@ IllTyped "Type inference fail"
     end
 
-and get_type mappings tv exp = 
-    let tau, c, new_tv = get_constrs mappings [] tv exp in 
+and get_type mappings exp = 
+    let tau, c = get_constrs mappings [] exp in 
     (* Format.printf "--GET_TYPE FOR EXPR--";
     print_expr exp;
     Format.printf "\nMAPPINGS\n%s\n" (str_of_gamma mappings);
     Format.printf "\nPRE_UNIFY\n%s\n" (str_of_constr (c));
     Format.printf "\nPOST_UNIFY\n%s\n" (str_of_constr (unify c));
     Format.printf "\nTYPE_ASSGN\n%s\n" (str_of_typ tau); *)
-    (sub tau (unify c), new_tv)
+    (sub tau (unify c))
 
-and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) (tv : int) : gamma * int = 
+and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma = 
   begin
   match stmt with 
-  | Exp e -> let _, t = (get_type gamma (tv + 1) e) in (gamma, t)
-  | Block [] -> (gamma, tv)
+  | Exp e -> let _ = (get_type gamma e) in gamma
+  | Block [] -> gamma
   | Block (stmt::rest) -> 
-  let new_gamma, new_tv = (check_stmt gamma stmt ret_typ (tv + 1)) in 
-    check_stmt new_gamma (Block(rest)) ret_typ (new_tv + 1)
+  let new_gamma = (check_stmt gamma stmt ret_typ) in 
+    check_stmt new_gamma (Block(rest)) ret_typ
   | Decl (t_opt, v) -> 
     (match t_opt with 
-    | Some t -> ((v, t)::gamma, tv)
-    | None -> (gamma, tv))
+    | Some t -> (v, t)::gamma
+    | None -> gamma)
   | Assign (v, e) -> 
   begin
     let name_typ = lookup_typ v gamma in 
-    let expr_typ, new_tv = get_type gamma (tv + 1) e in
+    let expr_typ = get_type gamma e in
     match name_typ with 
     | Some s ->
       if expr_typ = s
-      then (gamma, new_tv) 
+      then gamma
       else 
         raise (IllTyped 
         (v 
@@ -197,7 +199,7 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) (tv : int) :
         ^ (str_of_typ s) 
         ^ " but expr is type " 
         ^ (str_of_typ expr_typ)))
-    | None -> ((v, expr_typ)::gamma, new_tv)
+    | None -> (v, expr_typ)::gamma
   end
   (* | Assign (v, e) -> 
     let name_typ = lookup_typ v gamma in 
@@ -246,24 +248,24 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) (tv : int) :
                   else failwith "Incorrect return type")
   | Print (e) -> 
     ignore (get_constrs gamma e); gamma *)
-  | Pass -> (gamma, tv)
+  | Pass -> gamma
   | _ -> print_stmt stmt; failwith "u"
   end
 
-  and get_fn_app_typ mappings constr tv fn_typ elist = 
-    let fresh = TVar(tv) in 
+  and get_fn_app_typ mappings constr fn_typ elist = 
+    let fresh = fresh_tvar () in 
     match elist with 
     | e::[] -> 
     begin
-      let arg_typ, arg_constr, new_tv = get_constrs mappings constr (tv + 1) e in 
-        (fresh, [(fn_typ, TFun(arg_typ, fresh))]@arg_constr@constr, new_tv)
+      let arg_typ, arg_constr = get_constrs mappings constr e in 
+        (fresh, [(fn_typ, TFun(arg_typ, fresh))]@arg_constr@constr)
     end
     | e::rest -> 
     begin
-      let hof_typ, hof_constr, new_tv = get_fn_app_typ mappings constr (tv + 1) fn_typ rest in 
-        (fresh, constr@hof_constr, new_tv)
+      let hof_typ, hof_constr = get_fn_app_typ mappings constr fn_typ rest in 
+        (fresh, constr@hof_constr)
     end
-    | [] -> (fresh, [(fn_typ, TFun(TBase("Unit"), fresh))]@constr, tv)
+    | [] -> (fresh, [(fn_typ, TFun(TBase("Unit"), fresh))]@constr)
 
   and construct_fn_typ ret_typ arg_typs = 
   match arg_typs with
