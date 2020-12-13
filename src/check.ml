@@ -5,6 +5,45 @@ type error_info = string
 exception IllTyped of error_info
 type gamma = (var * typ) list
 type constr = (typ * typ) list
+type substitution = (typ * typ) list
+
+let rec sub tvar sigma : typ = 
+  match tvar with 
+  | TVar (i) as tv -> 
+  begin
+    match sigma with 
+    | [] -> tv
+    | (tv, typ)::rest -> typ
+  end
+  | TBase s as typ -> typ
+  | TFun(t1, t2) -> TFun(sub t1 sigma, sub t2 sigma)
+  | TList t -> TList(sub t sigma)
+  | TTuple lst -> TTuple(List.map (fun t -> sub t sigma) lst)
+
+(* returns whether or not tv1 is a free variable of tv2 *)
+let rec is_typevar_fv tv1 tv2 : bool = 
+  match tv1 with 
+  | TVar(i) as tau -> 
+  begin
+    match tv2 with 
+    | TVar i2 -> i <> i2
+    | TFun (t1, t2) -> is_typevar_fv tau t1 || is_typevar_fv tau t2
+    | TBase s -> false
+    | TTuple lst -> 
+    List.fold_left (fun acc tau' -> acc || is_typevar_fv tau tau') false lst
+    | TList tau' -> is_typevar_fv tau tau'
+  end
+  | _ -> false
+
+let is_typ_tvar t : bool = 
+  match t with 
+  | TVar _ -> true
+  | _ -> false
+
+let is_typ_tfun t : bool = 
+  match t with 
+  | TFun _ -> true
+  | _ -> false
 
 let rec str_of_typ (t : typ) : string =
   match t with 
@@ -79,6 +118,23 @@ let rec get_type (mappings : gamma) (constraints : constr) (tv : int) (exp : exp
   | Skip -> (TBase("None"), constraints)
   | _ -> raise @@ IllTyped("Check")
 
+and unify (c : constr) : substitution = 
+  match c with 
+  | [] -> []
+  | (t, t')::rest -> 
+    if t = t' then 
+    unify rest
+    else 
+    begin
+      match t, t' with 
+      | TVar i as tau, tau' when not (is_typevar_fv tau tau') -> 
+        (t, t')::(unify rest)
+      | (tau), (TVar i as tau') when not (is_typevar_fv tau' tau) -> 
+        (t', t)::(unify rest)
+      | TFun (t1, t2), TFun (t1', t2') -> 
+        unify ((t1, t1')::(t2, t2')::rest)
+      | _ -> raise @@ IllTyped "Type inference fail"
+    end
 
 and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma = 
   begin
