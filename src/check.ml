@@ -4,6 +4,7 @@ open Pprint
 type error_info = string
 exception IllTyped of error_info
 type gamma = (var * typ) list
+type constr = (typ * typ) list
 
 let rec str_of_typ (t : typ) : string =
   match t with 
@@ -11,6 +12,7 @@ let rec str_of_typ (t : typ) : string =
   | TBase s -> s
   | TTuple tlist -> "(" ^ str_of_typ_list tlist ^ ")"
   | TList t -> (str_of_typ t) ^ " list"
+  | TVar i -> "TVAR "^(string_of_int i)
 
 and str_of_typ_list (tlist : typ list) : string = 
  match tlist with 
@@ -25,42 +27,56 @@ let rec lookup_typ (name : var) (gamma : gamma) : typ =
   | (v, typ)::rest -> 
     if v = name then typ else lookup_typ name rest
 
-let rec get_type (mappings : gamma) (exp : exp) : typ = 
+let type_var (t : typ) c n : typ * constr = (TVar(n + 1), (t, TVar(n + 1))::c)
+
+let rec get_type (mappings : gamma) (constraints : constr) (tv : int) (exp : exp) : typ * constr = 
+  let fresh = TVar(tv) in 
   match exp with
-  | Bool b -> TBase "Bool"
-  | String s -> TBase "String"
-  | Int int -> TBase "Int"
-  | List elist -> get_list_typ mappings elist
+  | Bool b -> (TBase("Bool"), constraints)
+  | String s -> (TBase("String"), constraints)
+  | Int int -> (TBase("Int"), constraints)
+  (* | List elist -> get_list_typ mappings elist *)
   | Var var -> (match List.assoc_opt var mappings with
       | None -> raise (IllTyped "Unbound variable")
-      | Some e -> e)
+      | Some e -> (e, constraints))
   | Call (e1, elist) -> 
-    let fn_typ = get_type mappings e1 in 
-      get_fn_type mappings fn_typ elist
-  | Lam (v, t, exp) -> TFun (t, (get_type ((v, t)::mappings) exp))
-  | Let (v, e1, e2) -> get_type ((v, (get_type mappings e1))::mappings) e2
+    let (fn_typ, fn_constr) = get_type mappings constraints (tv + 1) e1 in 
+      get_fn_app_typ mappings constraints (tv + 1) fn_typ elist
+  | Lam (v, t, exp) ->
+    let lambda_expr_type, lambda_expr_constr = get_type ((v, fresh)::mappings) constraints (tv + 1) exp in 
+    (TFun(fresh, lambda_expr_type), lambda_expr_constr)
+  | Let (v, e1, e2) -> 
+    let exp_typ, exp_constr = get_type mappings constraints (tv + 1) e2 in 
+      (exp_typ, exp_constr)
   | Binary (binop, e1, e2) -> 
-    let t1 = get_type mappings e1 in 
-    let t2 = get_type mappings e2 in 
+    let t1, c1 = get_type mappings constraints (tv + 1) e1 in 
+    let t2, c2 = get_type mappings constraints (tv + 1) e2 in 
     (match binop with
      | Plus
      | Times
-     | Minus -> if t1 = t2 && t2 = TBase "Int" then TBase "Int" else raise (IllTyped "Invalid binop")
+     | Minus -> (TBase("Int"), [(t1, TBase("Int")); (t1, TBase("Int"))]@c1@c2)
      | Less
      | Equal
-     | Greater -> if t1 = t2 && t2 = TBase "Int" then TBase "Bool" else raise (IllTyped "Invalid binop")
+     | Greater -> (TBase("Bool"), [(t1, TBase("Int")); (t1, TBase("Int"))]@c1@c2)
      | And
-     | Or -> if t1 = t2 && t2 = TBase "Bool" then TBase "Bool" else raise (IllTyped "Invalid binop")
+     | Or -> (TBase("Bool"), [(t1, TBase("Bool")); (t1, TBase("Bool"))]@c1@c2)
      | _ -> failwith "Check")
-  | Unary (unop, exp) -> (match get_type mappings exp with
-      | TBase "Int" -> TBase "Int"
-      | _ -> raise (IllTyped  "Invalid Operator"))
+  | Unary (unop, exp) -> 
+  begin
+    let t1, c = get_type mappings constraints (tv + 1) exp in 
+    (match unop with 
+    | Not -> (t1, [(t1, TBase("Bool"))]@c)
+    | Neg -> (t1, [(t1, TBase("Int"))]@c))
+  end
   | Tuple eList -> (match eList with
-      | [] -> TTuple []
-      | hd::rest -> (match get_type mappings (Tuple rest) with
-          | TTuple list -> TTuple ((get_type mappings hd)::list)
-          | _ -> raise (IllTyped "Invalid tuple")))
-  | Skip -> TBase("None")
+      | [] -> (TTuple [], constraints)
+      | hd::rest -> 
+        let tup_typ, tup_c = get_type mappings constraints (tv + 1) (Tuple(rest)) in 
+        let el_typ, el_c = get_type mappings constraints (tv + 1) hd in 
+        (match tup_typ with 
+        | TTuple lst -> (TTuple(el_typ::lst), el_c@tup_c)
+        | _ -> raise @@ IllTyped "Not a tuple"))
+  | Skip -> (TBase("None"), constraints)
   | _ -> raise @@ IllTyped("Check")
 
 
@@ -120,25 +136,20 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma =
 
   end
 
-  and get_fn_type mappings fn_typ elist = 
-    (match fn_typ with 
-    | TFun(t1, t2) -> 
-      begin
-        match elist with 
-        | e::[] -> 
-          if (get_type mappings e) = t1 then t2 
-          else failwith "Argument is incorrect type"
-        | e::rest -> 
-          if (get_type mappings e) = t1 then 
-            begin
-              match t2 with 
-              | TFun (t2, t3) as t -> get_fn_type mappings t rest
-              | _ -> failwith "Too many arguments supplied"
-            end
-          else failwith "Argument is incorrect type"
-        | [] -> failwith "Not enough function arguments/partial application"
-      end
-    | _ -> failwith "Expr is not a function, it cannot be called")
+  and get_fn_app_typ mappings constr tv fn_typ elist = 
+    let fresh = TVar(tv) in 
+    match elist with 
+    | e::[] -> 
+    begin
+      let arg_typ, arg_constr = get_type mappings constr (tv + 1) e in 
+        (fresh, [(fn_typ, TFun(arg_typ, fresh))]@arg_constr@constr)
+    end
+    | e::rest -> 
+    begin
+      let hof_typ, hof_constr = get_fn_app_typ mappings constr (tv + 1) fn_typ rest in 
+        (fresh, hof_constr@constr)
+    end
+    | [] -> (fresh, [(fn_typ, TFun(TBase("Unit"), fresh))]@constr)
 
   and construct_fn_typ ret_typ arg_typs = 
   match arg_typs with

@@ -173,10 +173,9 @@ let () =
     Format.print_flush () in
 
   let v = Eval.evals (Eval.make_configuration e) in
-
   (* (6) Pretty-print the final value. *)
   let _ =
-    Format.printf "Result:@\n  @[";
+    Format.printf "\n\nState After Execution:@\n  @[";
     Pprint.print_env v;
     Format.printf "@]@\n";
     Format.printf "@]" in

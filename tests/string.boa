@@ -27,11 +27,23 @@ class Vector:
     return (self.x ** 2) + (self.y ** 2)
 
 x = Vector(1, 4)
-adder = Vector(10, 1)
+adder = Vector(11, 1)
 
-x.add(adder)
-print(x.x)
+def repeat(fun : Int -> Int, arg : Int, count : Int) -> Int:
+  if count == 0:
+    return arg
+  else:
+    if count == 1:
+      return fun(arg)
+    else:
+      return fun(repeat(fun, arg, count - 1))
+  
 
-while False:
-  print(x.x)
-  x.add(adder)
+def add_maker(x : Int) -> Int -> Int:
+  
+  def add_x(y : Int) -> Int:
+    return y + x
+  
+  return add_x
+
+print(add_maker(5)(3))

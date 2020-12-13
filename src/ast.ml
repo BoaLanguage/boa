@@ -5,6 +5,7 @@ type typ =
   | TBase of string
   | TTuple of typ list
   | TList of typ
+  | TVar of int
 
 type binop =
   | Plus
