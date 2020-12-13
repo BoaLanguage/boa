@@ -50,9 +50,9 @@ type exp =
 type stmt = 
   | Exp of exp 
   | Assign of var * exp
-  | Decl of typ * var
+  | Decl of (typ option) * var
   | MemDecl of typ * var
-  | MutableDecl of typ * var
+  | MutableDecl of (typ option) * var
   | MutableMemDecl of typ * var
   | AttrAssgn of exp * var * exp
   | SliceAssgn of exp * exp * exp

@@ -80,6 +80,20 @@ let string_of_unop o =
   | Not -> "not"
   | _ -> failwith "Print"
 
+let str_of_typ t =
+  let rec loop t =
+    match t with
+    | TBase s -> s
+    | TFun (t1, t2) ->
+      (loop t1) ^ " -> " ^ (loop t2)
+    | TTuple lst ->
+      List.fold_left (fun acc t -> acc ^ " * " ^ (loop t)) "" lst
+    | TList tl ->
+      (loop tl) ^ " list"
+    | TVar v -> "TVAR " ^ (string_of_int v)
+  in
+  loop t
+
 (* Pretty print type t *)
 let print_typ t =
   let rec loop t =
@@ -97,6 +111,7 @@ let print_typ t =
       Format.printf "@[<2>(";
       print_unop loop "List" tl;
       Format.printf ")@]"
+    | TVar v -> Format.printf "TVar %s" (string_of_int v);
   in
   loop t
 
@@ -133,7 +148,9 @@ let rec print_stmt s =
   Format.printf "}\n"
   | Decl (t, v) -> 
   Format.printf "%s : " v;
-  print_typ t
+  (match t with 
+  | Some t -> print_typ t
+  | None -> ())
   | AttrAssgn (ex, n, va) -> 
   print_expr (AttrAccess(ex, n));
   Format.printf " = "; print_expr va

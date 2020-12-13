@@ -7,6 +7,9 @@ type gamma = (var * typ) list
 type constr = (typ * typ) list
 type substitution = (typ * typ) list
 
+let rec str_of_gamma = 
+  List.fold_left (fun acc (v, t) -> acc ^ ", " ^ v ^ " => " ^ (str_of_typ t)) ""
+
 let rec sub tvar sigma : typ = 
   match tvar with 
   | TVar (i) as tv -> 
@@ -60,15 +63,15 @@ and str_of_typ_list (tlist : typ list) : string =
   (str_of_typ typ) ^ ", " ^ str_of_typ next ^ str_of_typ_list rest
  | typ::rest -> str_of_typ typ ^ str_of_typ_list rest
 
-let rec lookup_typ (name : var) (gamma : gamma) : typ = 
+let rec lookup_typ (name : var) (gamma : gamma) : typ option = 
   match gamma with 
-  | [] -> failwith (name ^ " has no type!")
+  | [] -> None
   | (v, typ)::rest -> 
-    if v = name then typ else lookup_typ name rest
+    if v = name then Some(typ) else lookup_typ name rest
 
 let type_var (t : typ) c n : typ * constr = (TVar(n + 1), (t, TVar(n + 1))::c)
 
-let rec get_type (mappings : gamma) (constraints : constr) (tv : int) (exp : exp) : typ * constr = 
+let rec get_constrs (mappings : gamma) (constraints : constr) (tv : int) (exp : exp) : typ * constr = 
   let fresh = TVar(tv) in 
   match exp with
   | Bool b -> (TBase("Bool"), constraints)
@@ -79,17 +82,17 @@ let rec get_type (mappings : gamma) (constraints : constr) (tv : int) (exp : exp
       | None -> raise (IllTyped "Unbound variable")
       | Some e -> (e, constraints))
   | Call (e1, elist) -> 
-    let (fn_typ, fn_constr) = get_type mappings constraints (tv + 1) e1 in 
+    let (fn_typ, fn_constr) = get_constrs mappings constraints (tv + 1) e1 in 
       get_fn_app_typ mappings constraints (tv + 1) fn_typ elist
   | Lam (v, t, exp) ->
-    let lambda_expr_type, lambda_expr_constr = get_type ((v, fresh)::mappings) constraints (tv + 1) exp in 
+    let lambda_expr_type, lambda_expr_constr = get_constrs ((v, fresh)::mappings) constraints (tv + 1) exp in 
     (TFun(fresh, lambda_expr_type), lambda_expr_constr)
   | Let (v, e1, e2) -> 
-    let exp_typ, exp_constr = get_type mappings constraints (tv + 1) e2 in 
+    let exp_typ, exp_constr = get_constrs mappings constraints (tv + 1) e2 in 
       (exp_typ, exp_constr)
   | Binary (binop, e1, e2) -> 
-    let t1, c1 = get_type mappings constraints (tv + 1) e1 in 
-    let t2, c2 = get_type mappings constraints (tv + 1) e2 in 
+    let t1, c1 = get_constrs mappings constraints (tv + 1) e1 in 
+    let t2, c2 = get_constrs mappings constraints (tv + 1) e2 in 
     (match binop with
      | Plus
      | Times
@@ -102,7 +105,7 @@ let rec get_type (mappings : gamma) (constraints : constr) (tv : int) (exp : exp
      | _ -> failwith "Check")
   | Unary (unop, exp) -> 
   begin
-    let t1, c = get_type mappings constraints (tv + 1) exp in 
+    let t1, c = get_constrs mappings constraints (tv + 1) exp in 
     (match unop with 
     | Not -> (t1, [(t1, TBase("Bool"))]@c)
     | Neg -> (t1, [(t1, TBase("Int"))]@c))
@@ -110,8 +113,8 @@ let rec get_type (mappings : gamma) (constraints : constr) (tv : int) (exp : exp
   | Tuple eList -> (match eList with
       | [] -> (TTuple [], constraints)
       | hd::rest -> 
-        let tup_typ, tup_c = get_type mappings constraints (tv + 1) (Tuple(rest)) in 
-        let el_typ, el_c = get_type mappings constraints (tv + 1) hd in 
+        let tup_typ, tup_c = get_constrs mappings constraints (tv + 1) (Tuple(rest)) in 
+        let el_typ, el_c = get_constrs mappings constraints (tv + 1) hd in 
         (match tup_typ with 
         | TTuple lst -> (TTuple(el_typ::lst), el_c@tup_c)
         | _ -> raise @@ IllTyped "Not a tuple"))
@@ -136,13 +139,40 @@ and unify (c : constr) : substitution =
       | _ -> raise @@ IllTyped "Type inference fail"
     end
 
+and get_type mappings exp = 
+    let tau, c = get_constrs mappings [] 0 exp in 
+    sub tau (unify c)
+
 and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma = 
   begin
   match stmt with 
   | Exp e -> ignore (get_type gamma e); gamma
+  | Block [] -> gamma 
+  | Block (stmt::rest) -> check_stmt (check_stmt gamma stmt ret_typ) (Block(rest)) ret_typ
+  | Decl (t_opt, v) -> 
+    (match t_opt with 
+    | Some t -> (v, t)::gamma
+    | None -> gamma)
   | Assign (v, e) -> 
+  begin
     let name_typ = lookup_typ v gamma in 
     let expr_typ = get_type gamma e in
+    match name_typ with 
+    | Some s ->
+      if expr_typ = s
+      then gamma 
+      else 
+        raise (IllTyped 
+        (v 
+        ^ " is of type " 
+        ^ (str_of_typ s) 
+        ^ " but expr is type " 
+        ^ (str_of_typ expr_typ)))
+    | None -> (v, expr_typ)::gamma
+  end
+  (* | Assign (v, e) -> 
+    let name_typ = lookup_typ v gamma in 
+    let expr_typ = get_constrs gamma e in
     if expr_typ = name_typ
     then gamma 
     else 
@@ -157,7 +187,7 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma =
   | MutableDecl (t, v) -> (v, t)::gamma
   | Block ([]) -> gamma
   | If (e, st1, st2) -> 
-        (let expr_typ = get_type gamma e in 
+        (let expr_typ = get_constrs gamma e in 
         if expr_typ = TBase("Bool") then 
         (ignore (check_stmt gamma st1 ret_typ); 
         ignore (check_stmt gamma st2 ret_typ); 
@@ -165,13 +195,13 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma =
         else failwith "If guard must be boolean")
   | While (e, st) -> 
   begin
-    let expr_typ = get_type gamma e in 
+    let expr_typ = get_constrs gamma e in 
     if expr_typ = TBase("Bool") then 
     (ignore (check_stmt gamma st ret_typ); gamma)
     else failwith "While guard must be boolean"
   end
   | For (v, e, loop) -> 
-    let bound_iterator_gamma = ((v, (get_type gamma e))::gamma) in 
+    let bound_iterator_gamma = ((v, (get_constrs gamma e))::gamma) in 
     ignore (check_stmt bound_iterator_gamma loop ret_typ); gamma
   | Def (ret, fn_id, arg_typs, body) -> 
   begin
@@ -186,10 +216,9 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma =
                   then gamma 
                   else failwith "Incorrect return type")
   | Print (e) -> 
-    ignore (get_type gamma e); gamma
+    ignore (get_constrs gamma e); gamma *)
+  | Pass -> gamma
   | _ -> print_stmt stmt; failwith "u"
-  
-
   end
 
   and get_fn_app_typ mappings constr tv fn_typ elist = 
@@ -197,7 +226,7 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma =
     match elist with 
     | e::[] -> 
     begin
-      let arg_typ, arg_constr = get_type mappings constr (tv + 1) e in 
+      let arg_typ, arg_constr = get_constrs mappings constr (tv + 1) e in 
         (fresh, [(fn_typ, TFun(arg_typ, fresh))]@arg_constr@constr)
     end
     | e::rest -> 
@@ -212,12 +241,12 @@ and check_stmt (gamma : gamma) (stmt : stmt) (ret_typ : typ option) : gamma =
   | [] -> ret_typ
   | (arg, _)::rest -> TFun(arg, construct_fn_typ ret_typ rest)
 
-  and get_list_typ mappings explist = 
+  (* and get_list_typ mappings explist = 
   match explist with 
   | [] -> TBase "None"
-  | el::[] -> TList (get_type mappings el)
+  | el::[] -> TList (get_constrs mappings el)
   | el::rest ->
    let t = (List.fold_right 
-   (fun exp typ -> let t2 = (get_type mappings exp) in 
+   (fun exp typ -> let t2 = (get_constrs mappings exp) in 
    if typ = t2 then t2 else raise @@ IllTyped "List elements of differing types")
-   rest (get_type mappings el)) in TList(t)
+   rest (get_constrs mappings el)) in TList(t) *)

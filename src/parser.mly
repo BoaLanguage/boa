@@ -71,11 +71,11 @@ simple_stmt:
    /* |  thint                             { Decl(fst $1, snd $1) } */
    |  expr DOT VAR EQUALS expr          { AttrAssgn($1, $3, $5) }
    |  LET thint EQUALS expr             { Block([
-                                        Decl(fst $2, snd $2);
+                                        Decl(Some (fst $2), snd $2);
                                         Assign(snd $2, $4)
                                         ]) }
     | VARKEYWORD thint EQUALS expr      { Block([
-                                        MutableDecl(fst $2, snd $2);
+                                        MutableDecl(Some (fst $2), snd $2);
                                         Assign(snd $2, $4)
                                         ]) }                                      
     | VAR EQUALS expr                   { Assign($1, $3) }
@@ -85,6 +85,14 @@ simple_stmt:
     | PRINT expr                        { Print ($2) }
     | MEMBER VARKEYWORD VAR COLON typ   { MutableMemDecl($5, $3) }
     | MEMBER LET VAR COLON typ          { MemDecl($5, $3) }
+    | LET VAR EQUALS expr               { Block([
+                                        Decl(None, $2);
+                                        Assign($2, $4)
+                                        ]) }
+    | VARKEYWORD VAR EQUALS expr        { Block([
+                                        Decl(None, $2);
+                                        Assign($2, $4)
+                                        ]) }
 
 compound_stmt:
     | iff                                { $1 }
