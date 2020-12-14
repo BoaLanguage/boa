@@ -108,12 +108,12 @@ let rec get_constrs (mappings : gamma) (constraints : constr) (exp : exp) : typ 
     (match binop with
      | Plus
      | Times
-     | Minus -> (TBase("Int"), [(t1, TBase("Int")); (t1, TBase("Int"))]@c1@c2)
+     | Minus -> (TBase("Int"), [(t1, TBase("Int")); (t2, TBase("Int"))]@c1@c2)
      | Less
      | Equal
-     | Greater -> (TBase("Bool"), [(t1, TBase("Int")); (t1, TBase("Int"))]@c1@c2)
+     | Greater -> (TBase("Bool"), [(t1, TBase("Int")); (t2, TBase("Int"))]@c1@c2)
      | And
-     | Or -> (TBase("Bool"), [(t1, TBase("Bool")); (t1, TBase("Bool"))]@c1@c2)
+     | Or -> (TBase("Bool"), [(t1, TBase("Bool")); (t2, TBase("Bool"))]@c1@c2)
      | _ -> failwith "Check")
   | Unary (unop, exp) -> 
   begin
