@@ -60,7 +60,7 @@ let rec is_typevar_fv tv1 tv2 : bool =
 
 let rec str_of_typ (t : typ) : string =
   match t with 
-  | TFun (t1, t2) -> (str_of_typ t1) ^ " -> " ^ (str_of_typ t2)
+  | TFun (t1, t2) -> "(" ^ (str_of_typ t1) ^ " -> " ^ (str_of_typ t2) ^ ")"
   | TBase s -> s
   | TTuple tlist -> "(" ^ str_of_typ_list tlist ^ ")"
   | TList t -> (str_of_typ t) ^ " list"
@@ -89,8 +89,11 @@ let rec get_constrs (mappings : gamma) (constraints : constr) (exp : exp) : typ 
       | None -> raise (IllTyped "Unbound variable")
       | Some e -> (e, constraints))
   | Call (e1, elist) -> 
-    let (fn_typ, fn_constr) = get_constrs mappings constraints e1 in 
+    let (fn_typ, fn_constr) = get_type mappings constraints e1 in 
       (* Format.printf "%s\n" (str_of_constr fn_constr); *)
+      Format.printf "---\n"; print_expr exp; Format.printf "\n";
+      Format.printf "FUNCTION: %s\n" (str_of_typ fn_typ);
+      Format.printf "FNCONSTR: %s\n" (str_of_constr fn_constr);
       get_fn_app_typ mappings (fn_constr) fn_typ elist 
   | Lam (v, None, e) ->
     let fresh = fresh_tvar () in 
@@ -211,7 +214,7 @@ and check_stmt (gamma : gamma) (subst : substitution) (stmt : stmt) (ret_typ : t
     if expr_typ = TBase("Bool") then 
     let _, s1 = (check_stmt gamma s st1 ret_typ) in
     let _, s2 = (check_stmt gamma s1 st2 ret_typ) in
-    gamma, s2
+    gamma, (s2)
     else failwith "If guard must be boolean")
   | Def (ret, fn_id, arg_typs, body) -> 
   begin
@@ -226,7 +229,6 @@ and check_stmt (gamma : gamma) (subst : substitution) (stmt : stmt) (ret_typ : t
     let arg_typ_names = 
       (List.map (fun (_, v) -> v) arg_typs) in 
     let new_gamma, new_subst = check_stmt (arg_typ_vars@gamma) subst body return_typ in
-    Format.printf "\nNEWGAMMA: %s\n" (str_of_gamma new_gamma);
     (fn_id, construct_fn_typ (apply_subst_to_gamma new_subst new_gamma) arg_typ_names)::gamma, subst
   end
   | Return (e) -> 
@@ -254,17 +256,13 @@ and check_stmt (gamma : gamma) (subst : substitution) (stmt : stmt) (ret_typ : t
   and get_fn_app_typ mappings constr fn_typ elist = 
     let fresh = fresh_tvar () in 
     match elist with 
-    | e::[] -> 
-    begin
-      let arg_typ, arg_constr = get_constrs mappings constr e in 
-        (fresh, [(fn_typ, TFun(arg_typ, fresh))]@arg_constr)
-    end
     | e::rest -> 
     begin
-      let hof_typ, hof_constr = get_fn_app_typ mappings constr fn_typ rest in 
-        (fresh, constr@hof_constr)
+      let arg_typ, arg_constr = get_type mappings constr e in 
+      let new_fn_typ = TFun(arg_typ, fresh) in 
+      get_fn_app_typ mappings ((fn_typ, new_fn_typ)::arg_constr) fresh rest
     end
-    | [] -> (fresh, [(fn_typ, TFun(TBase("Unit"), fresh))]@constr)
+    | [] -> (fresh, constr@[(fn_typ, TFun(TBase("Unit"), fresh))])
 
   and construct_fn_typ gamma arg_names = 
   match arg_names with

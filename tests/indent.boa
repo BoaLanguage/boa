@@ -1,5 +1,6 @@
-def test(x, y : Int -> String):
-  return y(x)
+def test(x, y):
+  return y(x + 2)
 
-let x : Int = 100
-let f = lambda x -> x == 2
+let dd = 2
+let f = lambda l -> l == 2
+let res = test(dd > 2, f)
