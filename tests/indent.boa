@@ -1,6 +1,6 @@
 def test(x, y):
-  return y(x + 2)
+  return y(x)
 
 let dd = 2
 let f = lambda l -> l == 2
-let res = test(dd > 2, f)
+let res = test(dd, f)
