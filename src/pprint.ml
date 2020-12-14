@@ -175,7 +175,9 @@ let rec print_stmt s =
   print_stmt s2;
   | Def (t1, fn, args, b) -> 
   Format.printf "Function %s -> " fn;
-  print_typ t1;
+  (match t1 with 
+  | Some t -> print_typ t
+  | None -> Format.printf "None");
   Format.printf "\n";
   print_stmt b;
   | Break -> Format.printf ": break :"

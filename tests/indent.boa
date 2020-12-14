@@ -1,3 +1,5 @@
-let pp = lambda f -> (lambda x -> f(x + 1))
-let other = lambda x -> x > 2
-let p = (pp(other))(4)
+def test(x, y : Int -> String):
+  return y(x)
+
+let x : Int = 100
+let f = lambda x -> x == 2

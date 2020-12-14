@@ -63,7 +63,7 @@ type stmt =
   | While of exp * stmt
   | For of var * exp * stmt
   | Class of var * exp * stmt
-  | Def of typ * var * (typ * var) list * stmt
+  | Def of (typ option) * var * ((typ option) * var) list * stmt
   | Break
   | Continue
   | Pass

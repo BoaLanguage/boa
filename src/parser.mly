@@ -97,7 +97,8 @@ simple_stmt:
 compound_stmt:
     | iff                                { $1 }
     | DEF VAR paramlist ARROW 
-      typ COLON EOL iblock               { Def($5, $2, $3, $8) }
+      typ COLON EOL iblock               { Def(Some($5), $2, $3, $8) }
+    | DEF VAR paramlist COLON EOL iblock { Def(None, $2, $3, $6) }
     | WHILE expr COLON EOL iblock        { While($2, $5) }
     | FOR VAR IN expr COLON EOL iblock   { For($2, $4, $7) }
     | CLASS VAR COLON EOL iblock         { Class($2, Skip, $5) }
@@ -142,7 +143,7 @@ bexp:
     | expr GREATER expr                   { Binary(Greater, $1, $3) }
     | expr AND expr                       { Binary(And, $1, $3) }
     | expr OR expr                        { Binary(Or, $1, $3) }
-    | expr EQUALSEQUALS expr                    { Binary(Equal, $1, $3) }
+    | expr EQUALSEQUALS expr              { Binary(Equal, $1, $3) }
     | expr STAR expr                      { Binary(Times, $1, $3) }
     | expr MINUS expr                     { Binary(Minus, $1, $3) }
     | expr DIV expr                       { Binary(Divide, $1, $3) }
@@ -163,6 +164,10 @@ thint:
     | VAR COLON typ                     { ($3, $1) }
     | LPAREN thint RPAREN               { $2 }
 
+thintopt:
+    | VAR COLON typ                     { (Some($3), $1) }
+    | LPAREN thintopt RPAREN            { $2 }
+
 typ:
     | VAR                               { TBase($1) }
     | typ ARROW typ                     { TFun($1, $3) }
@@ -180,11 +185,17 @@ arglist:
 
 paramlist:
     | LPAREN RPAREN                     { [] }
-    | LPAREN thintlist RPAREN           { $2 }
+    | LPAREN thintoptlist RPAREN        { $2 }
 
 thintlist:
     | thint                             { [$1] }
     | thintlist COMMA thint             { $1@[$3] }
+
+thintoptlist:
+    | thintopt                          { [$1] }
+    | VAR                               { [(None, $1)] }
+    | thintoptlist COMMA thintopt       { $1@[$3] }
+    | thintoptlist COMMA VAR            { $1@[(None, $3)] }
 
 dict:
     | INDENT DEDENT                     { Dict([]) }
