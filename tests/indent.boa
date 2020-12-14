@@ -1,6 +1,4 @@
-def test(x, y):
-  return y(x)
+def apply_triple(fn3, fn2, fn, x):
+  return fn3(fn2(fn(x)))
 
-let dd = 2
-let f = lambda l -> l == 2
-let res = test(dd, f)
+let x = apply_triple(lambda x -> x + 5, lambda x -> x - 2, lambda x -> x * 2, 2)

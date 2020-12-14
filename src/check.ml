@@ -153,7 +153,7 @@ and unify (c : constr) : substitution =
       | _ -> 
       Format.printf "%s == %s" (str_of_typ t) (str_of_typ t');
       Format.printf "--\n%s\n--" (str_of_constr c);
-      raise @@ IllTyped "Type inference fail"
+      raise @@ IllTyped "Typing of program led to above impossible constraints"
     end
 
 and get_type (mappings : gamma) (s : substitution) (exp : exp) : typ * substitution = 
