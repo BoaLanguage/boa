@@ -1,4 +1,2 @@
-def apply_triple(fn3, fn2, fn, x):
-  return False
-
-let x = (2 > 0) or apply_triple(lambda x -> x + 5, lambda x -> x - 2, lambda x -> x * 2, 2)
+let x = 5
+x = 100

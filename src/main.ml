@@ -155,9 +155,8 @@ let () =
   let _ = if !nocheck then
       Format.printf "Type checking skipped.@\n@\n"
     else
-      let res = Check.check_stmt [] [] e (None) in 
-      Format.printf "Inferred Types: [%s]\n" (fst res |> Check.str_of_gamma);
-      Format.printf "Substitution: [%s]\n" (snd res |> Check.str_of_constr)
+      let res = Check.check e in 
+      Format.printf "Inferred Types: [%s]\n" (res |> Check.str_of_gamma)
     (* (match e with
     | s -> Check.check_stmt s
     | Exp (exp) -> 

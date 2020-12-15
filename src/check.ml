@@ -7,6 +7,16 @@ type mappings = (var * typ) list
 type constraints = (typ * typ) list
 type substitution = (int * typ) list
 
+let num_tvars_used = ref (-1)
+
+let fresh_tvar () = num_tvars_used := !num_tvars_used + 1; TVar(!num_tvars_used)
+
+let str_of_gamma = 
+  List.fold_left (fun acc (v, t) -> acc ^ ", " ^ v ^ " => " ^ (str_of_typ t)) ""
+
+let str_of_constr l = 
+  List.fold_left 
+  (fun acc (t1, t2) -> acc ^ ", " ^ (str_of_typ t1) ^ " == " ^ (str_of_typ t2)) ""
 
 let t_string = TBase("String")
 let t_int = TBase("Int")
@@ -17,10 +27,12 @@ let no_constraints = []
 let empty_substituition = []
 let empty_gamma = []
 
-let zip = List.map2 (fun x y -> (x,y))
+let zp l = List.map2 (fun x y -> (x,y)) l
 let unzip l = (List.map fst l, List.map snd l) 
 let map_tuple (f : 'a list -> 'b list) l = 
-  let l1, l2 = unzip l in zip (f l1) (f l2)
+  let l1, l2 = unzip l in zp (f l1) (f l2)
+
+let lookup_typ: (var -> mappings -> typ option) = List.assoc_opt
 
 let any (f: 'a -> bool) : ('a list -> bool) = 
 List.fold_left (fun acc b -> acc || (f b)) false
@@ -34,12 +46,32 @@ let (|??) (opt: 'a option) (default: 'a): 'a =
 let check_expression (constraints: constraints) 
   (gamma: mappings) 
   (exp: Ast.exp): typ * constraints = 
-  failwith "Unimplemented"
+  match exp with 
+  | Int i -> (t_int, constraints)
+  | String s -> (t_string, constraints)
+  | _ -> failwith "Unimplemented"
 
-let check_statement (constraints: constraints) 
+let rec check_statement (constraints: constraints) 
   (gamma: mappings) 
   (statement: stmt):  mappings * constraints = 
-  failwith "Unimplemented"
+  let check_expr = check_expression constraints gamma in 
+  match statement with 
+  | Exp e -> let _, constraints' = check_expr e in gamma, constraints'
+  | Assign (v, e) -> 
+  let var_typ = 
+    (match lookup_typ v gamma with 
+    | Some typ -> typ
+    | None -> raise @@ IllTyped "Assignment to unbound variable") in 
+  let expr_typ, constraints' = check_expr e in gamma, (expr_typ, var_typ)::constraints'
+  | Block [] -> gamma, constraints
+  | Block (stmt::rest) -> 
+    let gamma', constraints' = check_statement constraints gamma stmt in 
+    check_statement constraints' gamma' @@ Block(rest)
+  | Decl (t_opt, v) -> 
+    let typ = t_opt |?? fresh_tvar () in 
+    (v, typ)::gamma, constraints
+  | Pass -> gamma, constraints
+  | _ -> failwith "Unimplemented"
 
 let substitute (sigma: substitution): typ list -> typ list =
   let rec sub (typ: typ) : typ = 
@@ -79,14 +111,11 @@ let rec unify (constraints: constraints): substitution =
       (* Format.printf "%s == %s" (str_of_typ t) (str_of_typ t');
       Format.printf "--\n%s\n--" (str_of_constr c); *)
     raise @@ IllTyped "Typing of program led to above impossible constraints"
-
-
+    end
 
 let check (statement: stmt): mappings = 
   let gamma, constraints = 
     check_statement no_constraints empty_gamma statement in
   let substitution = unify constraints in 
   let names, types = unzip gamma in
-  zip names @@ substitute substitution types
-  
-  
+  zp names (substitute substitution types)
