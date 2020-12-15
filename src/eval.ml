@@ -288,7 +288,7 @@ and evals (conf : configuration) : env =
       evals (sigma, Pass, c, kappa)
   | Break, c -> evaluate_break ()
   | Continue, c -> evaluate_continue ()
-  | Return e, _ -> ("return", evale e sigma) :: sigma
+  | Return e, _ -> evaluate_assignment "return" e
   | Def (rt, name, args, body), c ->
       evals
         ( (name, eval_fun (Def (rt, name, args, body)) sigma) :: sigma,
@@ -312,9 +312,9 @@ and call (callable : value) (args : value list) : value =
   in
   let call_closure params body env_ref =
     let callenv =
-      match args with [] -> !env_ref | _ -> zip params args @ !env_ref
+      match args with [] -> !env_ref | _ -> ("return", VRef(ref None)) :: zip params args @ !env_ref
     in
-    lookup (evals (callenv, body, Pass, [])) "return"
+    deref_value @@ lookup (evals (callenv, body, Pass, [])) "return"
   in
   let call_reference r =
     match !r with
