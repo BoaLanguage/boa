@@ -1,11 +1,14 @@
 type var = string
+type tvar = int
 
 type typ =
   | TFun of typ * typ
   | TBase of string
   | TTuple of typ list
   | TList of typ
-  | TVar of int
+  | TVar of tvar
+
+type scheme = tvar list * typ
 
 type binop =
   | Plus
