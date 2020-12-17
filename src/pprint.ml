@@ -128,6 +128,8 @@ let rec print_expr e =
     print_list lst;
     Format.printf ")";
   | Skip -> Format.printf "None"
+  | Lam (v, t_opt, e) -> 
+    Format.printf "lambda v -> "; print_expr e;
   | _ -> Format.printf "yikes"
 
 and print_list lst = 

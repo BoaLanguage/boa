@@ -1,2 +1,1 @@
-let x = 5
-x = 100
+let y = lambda f -> (lambda x -> (f(x + 4) < 2) and f(True))
