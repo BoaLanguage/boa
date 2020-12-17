@@ -147,6 +147,7 @@ let rec check_expr (gamma : mappings) (e : exp) : typ =
     let arg_typ = (match args with 
     | e::[] -> check_expr gamma e
     | _ -> failwith "Unimplemented fn call") in 
+    Format.printf "CONSTR: %s\n" (str_of_sub @@ unify [(fn_typ, TFun(arg_typ, fresh))]);
     unify [(fn_typ, TFun(arg_typ, fresh))] |> update_global_subst;
     fresh
   | _ -> failwith "Unimplemented"
@@ -166,5 +167,5 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings =
   | _ -> failwith "Unimplemented statement"
 
 let check (statement: stmt): mappings = 
-  let vars, types = check_statement [] statement |> unzip in
-  zip (vars) (substitute !global_substitution types)
+  Format.printf "SUBST: %s\n" (str_of_sub !global_substitution);
+  check_statement [] statement 
