@@ -1,5 +1,6 @@
 open Ast
 open Pprint
+open Set
 
 type error_info = string
 exception IllTyped of error_info
@@ -14,8 +15,11 @@ let reset_tvars () = num_tvars_used := -1
 
 let global_substitution : substitution ref = ref []
 
-let str_of_gamma = 
+let str_of_old_gamma = 
   List.fold_left (fun acc (v, t) -> acc ^ ", " ^ v ^ " => " ^ (str_of_typ t)) ""
+
+let str_of_gamma : mappings -> string = 
+  List.fold_left (fun acc (v, (_, t)) -> acc ^ ", " ^ v ^ " => " ^ "forall " ^ (str_of_typ t)) ""
 
 let str_of_constr = 
   List.fold_left 
@@ -34,6 +38,8 @@ let t_unit = TBase("Unit")
 let no_constraints = []
 let empty_substituition = []
 let empty_gamma = []
+
+module IS = Set.Make(Int)
 
 let zp l = List.map2 (fun x y -> (x,y)) l
 let unzip l = (List.map fst l, List.map snd l) 
@@ -60,14 +66,33 @@ let substitute (sigma: substitution): typ list -> typ list =
   | TTuple lst -> TTuple(List.map sub lst) in
   List.map @@ sub
 
+let update_global_subst new_subst = 
+  let keys, vals = unzip !global_substitution in 
+  global_substitution := zp keys (substitute new_subst vals)
+  
+let rec (==>) (i: int) (typ: typ): bool = 
+  match typ with 
+  | TVar i' -> i = i'
+  | TFun (t1, t2) -> i ==> t1 || i ==> t2
+  | TBase s -> false
+  | TTuple lst -> any ((==>) i) lst
+  | TList tau' -> i ==> tau'
+
+let rec ftv (t : typ) : IS.t = 
+  match t with 
+  | TVar i -> IS.add i IS.empty
+  | TFun(t1, t2) -> IS.union (ftv t1) (ftv t2)
+  | TBase s -> IS.empty
+  | TTuple tlist -> List.fold_left (fun acc el -> IS.union (ftv el) acc) IS.empty tlist
+  | TList typ -> ftv typ
+
+let rec typ_var_diff (t1 : typ) (gamma : mappings) : int list = 
+  let t1_ftv = ftv t1 in 
+  let gamma_ftv = List.fold_left (fun acc (_, (lst, t)) -> IS.union (ftv t) acc) IS.empty gamma in 
+  IS.elements (IS.diff t1_ftv gamma_ftv)
+  
+
 let rec unify (constraints: constraints): substitution = 
-  let rec (==>) (i: int) (typ: typ): bool = 
-    match typ with 
-    | TVar i' -> i = i'
-    | TFun (t1, t2) -> i ==> t1 || i ==> t2
-    | TBase s -> false
-    | TTuple lst -> any ((==>) i) lst
-    | TList tau' -> i ==> tau' in
   match constraints with 
   | [] -> []
   | (t, t')::rest -> 
@@ -102,18 +127,44 @@ let rec inst_scheme scheme =
   | ([], t) -> t
   | (tv::rest, t) -> inst_scheme (rest, replace_tvar_occurrences tv t)
 
-let check_expr (gamma : mappings) (e : exp) : typ = 
+let rec check_expr (gamma : mappings) (e : exp) : typ = 
   match e with 
   | Int i -> t_int
   | Bool b -> t_bool
   | String s -> t_string
   | Var v -> 
-    match lookup_typ v gamma with 
+    (match lookup_typ v gamma with 
     | None -> raise @@ IllTyped "Unbound variable"
-    | Some scheme -> inst_scheme scheme
+    | Some scheme -> inst_scheme scheme)
+  | Lam (v, t_opt, exp) -> 
+    let arg_typ = match t_opt with 
+    | None -> fresh_tvar ()
+    | Some t -> t in 
+    TFun(arg_typ, check_expr ((v, ([], arg_typ))::gamma) exp)
+  | Call (fn, args) -> 
+    let fresh = fresh_tvar () in 
+    let fn_typ = check_expr gamma fn in 
+    let arg_typ = (match args with 
+    | e::[] -> check_expr gamma e
+    | _ -> failwith "Unimplemented fn call") in 
+    unify [(fn_typ, TFun(arg_typ, fresh))] |> update_global_subst;
+    fresh
+  | _ -> failwith "Unimplemented"
 
 
-let check_statement () = ()
+let rec check_statement (gamma : mappings) (statement: stmt) : mappings = 
+  match statement with 
+  | Exp e -> check_expr gamma e; gamma
+  | Assign (v, e) -> 
+    let expr_typ = check_expr gamma e in 
+    (v, (typ_var_diff expr_typ gamma, expr_typ))::gamma
+  | Pass
+  | Block ([]) -> gamma
+  | Block (st::rest) -> 
+    let new_gamma = check_statement gamma st in 
+    check_statement new_gamma (Block(rest))
+  | _ -> failwith "Unimplemented statement"
 
 let check (statement: stmt): mappings = 
-  check_statement statement
+  let vars, types = check_statement [] statement |> unzip in
+  zip (vars) (substitute !global_substitution types)

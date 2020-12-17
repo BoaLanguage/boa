@@ -1,1 +1,2 @@
-let y = lambda f -> (lambda x -> (f(x + 4) < 2) and f(True))
+apply = lambda f -> (lambda x -> f(x))
+id = apply(lambda x -> x)
