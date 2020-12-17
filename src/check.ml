@@ -69,6 +69,16 @@ let substitute (sigma: substitution): typ list -> typ list =
   | TTuple lst -> TTuple(List.map sub lst) in
   List.map @@ sub
 
+let substitute_scheme (sigma: substitution): typ list -> typ list =
+  let rec sub (typ: typ) : typ = 
+  match typ with 
+  | TVar (i) -> List.assoc_opt i sigma |?? typ
+  | TBase s as typ -> typ
+  | TFun(t1, t2) -> TFun(sub t1, sub t2)
+  | TList t -> TList(sub t)
+  | TTuple lst -> TTuple(List.map sub lst) in
+  List.map @@ sub
+
 let update_global_subst new_subst = 
   let keys, vals = unzip !global_substitution in 
   global_substitution := new_subst @ zp keys (substitute new_subst vals)
@@ -81,17 +91,17 @@ let rec (==>) (i: int) (typ: typ): bool =
   | TTuple lst -> any ((==>) i) lst
   | TList tau' -> i ==> tau'
 
-let rec ftv (t : typ) : IS.t = 
+let rec ftv (t : typ) (bound : tvar list) : IS.t = 
   match t with 
-  | TVar i -> IS.add i IS.empty
-  | TFun(t1, t2) -> IS.union (ftv t1) (ftv t2)
+  | TVar i -> if List.mem i bound then IS.empty else IS.add i IS.empty
+  | TFun(t1, t2) -> IS.union (ftv t1 bound) (ftv t2 bound)
   | TBase s -> IS.empty
-  | TTuple tlist -> List.fold_left (fun acc el -> IS.union (ftv el) acc) IS.empty tlist
-  | TList typ -> ftv typ
+  | TTuple tlist -> List.fold_left (fun acc el -> IS.union (ftv el bound) acc) IS.empty tlist
+  | TList typ -> ftv typ bound
 
 let rec typ_var_diff (t1 : typ) (gamma : mappings) : int list = 
-  let t1_ftv = ftv t1 in 
-  let gamma_ftv = List.fold_left (fun acc (_, (lst, t)) -> IS.union (ftv t) acc) IS.empty gamma in 
+  let t1_ftv = ftv t1 [] in 
+  let gamma_ftv = List.fold_left (fun acc (_, (lst, t)) -> IS.union (ftv t lst) acc) IS.empty gamma in 
   IS.elements (IS.diff t1_ftv gamma_ftv)
   
 let sub_gamma (s : substitution) (gamma : mappings) : mappings = 
@@ -100,6 +110,7 @@ let sub_gamma (s : substitution) (gamma : mappings) : mappings =
   zp (vars) (zp foralls @@ substitute s types)
 
 let rec unify (constraints: constraints): substitution = 
+  Format.printf "\nCONSTRAINTS: %s" (str_of_constr constraints);
   match constraints with 
   | [] -> []
   | (t, t')::rest -> 
@@ -115,24 +126,24 @@ let rec unify (constraints: constraints): substitution =
           let sigma' =  [(i, t)] in 
           sigma' @ (unify @@ sub_constraints sigma')
       | TFun (t1, t2), TFun (t1', t2') -> 
-        unify @@ (rest @ (t1, t1') :: (t2, t2) :: [])
+        unify @@ ((t1, t1') :: (t2, t2') :: rest)
       | _ -> 
     raise @@ IllTyped "Typing of program led to above impossible constraints"
     end
 
 let rec inst_scheme scheme = 
-  let rec replace_tvar_occurrences old_var typ = 
+  let rec replace_tvar_occurrences old_var typ fresh = 
     match typ with 
-    | TVar i when i = old_var -> fresh_tvar ()
+    | TVar i when i = old_var -> fresh
     | TVar i -> TVar i
-    | TFun (t1, t2) -> TFun(replace_tvar_occurrences old_var t1, replace_tvar_occurrences old_var t2)
-    | TTuple tlist -> TTuple(List.map (replace_tvar_occurrences old_var) tlist)
-    | TList t -> TList(replace_tvar_occurrences old_var t)
+    | TFun (t1, t2) -> TFun(replace_tvar_occurrences old_var t1 fresh, replace_tvar_occurrences old_var t2 fresh)
+    | TTuple tlist -> TTuple(List.map (replace_tvar_occurrences old_var fresh) tlist)
+    | TList t -> TList(replace_tvar_occurrences old_var t fresh)
     | _ -> typ
     in
   match scheme with 
   | ([], t) -> t
-  | (tv::rest, t) -> inst_scheme (rest, replace_tvar_occurrences tv t)
+  | (tv::rest, t) -> inst_scheme (rest, replace_tvar_occurrences tv t (fresh_tvar ()))
 
 let rec check_expr (gamma : mappings) (e : exp) : typ * substitution = 
   match e with 
@@ -151,14 +162,23 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
     TFun(List.hd @@ substitute new_sub [arg_typ], expr_typ), new_sub
   | Call (e0, elist) -> 
     let fn_typ, s0 = check_expr gamma e0 in 
+    Format.printf "\n-----";
+    Format.printf "\nEXPR: "; print_expr e0;
+    Format.printf "\nSUB 0: %s" (str_of_sub s0);
+    Format.printf "\nFN TYPE: %s\n" (str_of_typ fn_typ);
     let new_gamma = sub_gamma s0 gamma in 
     let arg_typ, s1 = 
       (match elist with 
-      | e1::[] -> check_expr new_gamma e1
+      | e1::[] -> Format.printf "\nARG: "; print_expr e1;
+      check_expr new_gamma e1
       | _ -> failwith "Unimplemented fn call")
       in 
+      Format.printf "\nARG TYPE: %s" (str_of_typ arg_typ);
+      Format.printf "\nSUB 1: %s" (str_of_sub s1);
     let fresh = fresh_tvar () in 
     let s2 = unify [(List.hd @@ substitute s1 [fn_typ], TFun(arg_typ, fresh))] in 
+    Format.printf "CONSTR: %s\n" (str_of_constr [(List.hd @@ substitute s1 [fn_typ], TFun(arg_typ, fresh))]);
+    Format.printf "\nFINAL SUB: %s\n" (str_of_sub s2);
     List.hd @@ substitute s2 [fresh], s2@s1@s0
   | _ -> failwith "Unimplemented"
 
@@ -169,6 +189,7 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings =
   | Assign (v, e) -> 
     let t0, s0 = check_expr gamma e in 
     let gamma' = sub_gamma s0 gamma in 
+    Format.printf "SUBST: %s\n" (str_of_sub s0);
     (v, (typ_var_diff t0 gamma', t0))::gamma'
   | Pass
   | Block ([]) -> gamma
@@ -178,5 +199,4 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings =
   | _ -> failwith "Unimplemented statement"
 
 let check (statement: stmt): mappings = 
-  Format.printf "SUBST: %s\n" (str_of_sub !global_substitution);
   check_statement [] statement 
