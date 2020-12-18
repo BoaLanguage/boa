@@ -100,9 +100,6 @@ let rec unify (constraints: constraints): substitution =
   match constraints with 
   | [] -> []
   | (t, t')::rest -> 
-    print_endline "-----";
-    print_endline (t = t' |> string_of_bool);
-    (print_endline @@ str_of_typ t, print_endline @@ str_of_typ t');
     if t = t' then unify rest
     else 
     begin
