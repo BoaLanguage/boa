@@ -1,2 +1,4 @@
 #!./boa
-let x = ["STING", 1]
+def add5(x):
+  return x + 5
+var z = add5(532)

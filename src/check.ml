@@ -25,6 +25,10 @@ let empty_substituition = []
 let empty_gamma = []
 
 let update k v lst =  (k, v)::List.remove_assoc k lst 
+let assoc_opt_or_raise k lst = 
+match List.assoc_opt k lst with 
+| None -> raise @@ IllTyped ("Unbound" ^ k)
+| Some v -> v
 
 module TypeVarSet = Set.Make(Int)
 
@@ -52,20 +56,9 @@ let substitute (sigma: substitution): typ list -> typ list =
   | TList t -> TList(sub t)
   | TTuple lst -> TTuple(List.map sub lst)
   | TDict (t1, t2) -> TDict (sub t1, sub t2)
+  | TLimbo t -> TLimbo (sub t)
+  | TMutable t -> TMutable (sub t)
   | _ -> failwith "Unimplemented (substitute)" 
-  in 
-  List.map @@ sub
-
-let substitute_scheme (sigma: substitution): typ list -> typ list =
-  let rec sub (typ: typ) : typ = 
-  match typ with 
-  | TVar (i) -> List.assoc_opt i sigma |?? typ
-  | TBase s as typ -> typ
-  | TFun(t1, t2) -> TFun(sub t1, sub t2)
-  | TList t -> TList(sub t)
-  | TTuple lst -> TTuple(List.map sub lst)
-  | TDict (t1, t2) -> TDict(sub t1, sub t2)
-  | _ -> failwith "Unimplemented (substitute_scheme)"
   in 
   List.map @@ sub
   
@@ -77,6 +70,9 @@ let rec (==>) (i: tvar) (typ: typ): bool =
   | TTuple lst -> any ((==>) i) lst
   | TList tau' -> i ==> tau'
   | TDict (t1, t2) -> i ==> t1 || i ==> t2
+  | TMutable (t) -> i ==> t
+  | TLimbo (t) -> i ==> t
+  | _ -> failwith "Unimplemented ==>"
 
 let rec free_type_variables (t : typ) (bound : tvar list) : TypeVarSet.t = 
   match t with 
@@ -86,6 +82,8 @@ let rec free_type_variables (t : typ) (bound : tvar list) : TypeVarSet.t =
   | TTuple tlist -> List.fold_left (fun acc el -> TypeVarSet.union (free_type_variables el bound) acc) TypeVarSet.empty tlist
   | TList typ -> free_type_variables typ bound
   | TDict (t1, t2) -> TypeVarSet.union (free_type_variables t1 bound) (free_type_variables t2 bound)
+  | TLimbo (t) -> free_type_variables t bound
+  | TMutable (t) -> free_type_variables t bound
   | _ -> failwith "Unimplemomted"
 
 let rec typ_var_diff (t1 : typ) (gamma : mappings) : int list = 
@@ -102,11 +100,19 @@ let rec unify (constraints: constraints): substitution =
   match constraints with 
   | [] -> []
   | (t, t')::rest -> 
+    print_endline "-----";
+    print_endline (t = t' |> string_of_bool);
+    (print_endline @@ str_of_typ t, print_endline @@ str_of_typ t');
     if t = t' then unify rest
     else 
     begin
       let sub_constraints subst = map_tuple (substitute subst) rest in
       match t, t' with 
+      | TLimbo t, other -> unify @@ (t, other)::rest
+      | other, TLimbo t -> unify @@ (other, t)::rest
+      | TMutable t, other -> unify @@ (t, other)::rest
+      | other, TMutable t -> 
+      unify @@ (other, t)::rest
       | TVar i , _ when not (i ==> t') -> 
           let sigma' = [(i, t')] in
           sigma' @ (unify @@ sub_constraints sigma')
@@ -118,8 +124,7 @@ let rec unify (constraints: constraints): substitution =
       | TList (t), TList(t') -> unify @@ (t,t')::rest 
       | TDict (t1, t2), TDict(t1', t2') ->
         unify @@ ((t1, t1') :: (t2, t2') :: rest)
-      | _ -> 
-    raise @@ IllTyped "Typing of program led to above impossible constraints"
+      | _ -> raise @@ IllTyped "Typing of program led to above impossible constraints"
     end
 
 let rec init_scheme (scheme: scheme): typ = 
@@ -231,27 +236,33 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
   | Exp e -> let _ = check_expr gamma e in gamma, []
   | Decl (t_opt, v) -> 
     let t = t_opt |?? fresh_tvar () in 
-    (v, ([], t))::gamma, []
+    print_endline (str_of_gamma @@ (v, ([], TLimbo(t)))::gamma);
+    (v, ([], TLimbo(t)))::gamma, []
   | MutableDecl (t_opt, v) -> 
     let t = t_opt |?? fresh_tvar () in 
     (v, ([], TMutable(t)))::gamma, []
   | Assign (v, e) -> 
-    let sch = match List.assoc_opt v gamma with
-    | None -> raise @@ IllTyped ("Unbound variable " ^ v)
-    | Some sch -> sch in 
+  begin
+    let sch, is_mut = 
+      match assoc_opt_or_raise v gamma with 
+      | (lst, TLimbo(t)) -> (lst, t), false
+      | (lst, TMutable(t)) -> (lst, t), true
+      | _ -> raise @@ IllTyped ("Illegal assignment to " ^ v) in
     let t0, s0 = check_expr gamma e in 
     let gamma' = sub_gamma s0 gamma in 
     let var_typ = init_scheme sch in 
     let s1 = unify [(var_typ, t0)] in 
     let gamma'' = sub_gamma s1 gamma' in 
-    let unified_type = List.hd @@ substitute s1 [t0] in 
-    (update v (typ_var_diff unified_type gamma, unified_type) gamma''), s1
-  | Pass
-  | Block ([]) -> gamma, []
-  | Block (st::rest) -> 
-    let new_gamma, s0 = check_statement gamma st in 
-    let new_gamma' = sub_gamma s0 new_gamma in 
-    check_statement new_gamma' (Block(rest))
+    let unified_type = List.hd @@ substitute s1 [var_typ] in 
+    let unified_type = if is_mut then TMutable(unified_type) else unified_type in 
+    (update v (typ_var_diff unified_type gamma, unified_type) gamma''), s1@s0
+  end
+  | Pass -> gamma, []
+  | Block (stmt_lst) -> 
+    let f (old_gamma, sub) stmt = 
+      let new_gamma, sub' = check_statement old_gamma stmt in
+      (new_gamma, sub'@sub)
+    in List.fold_left f (gamma, []) stmt_lst 
   | If (e0, st1, st2) -> 
     let t0, s0 = check_expr gamma e0 in
     let gamma' = sub_gamma s0 gamma in 
@@ -271,14 +282,18 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
       let t = typ_opt |?? fresh_tvar () in
       (var, ([], t)) in 
     let arg_typs = List.map mapper args' in 
+    let arg_typs = let (ret, (schm, t)) = List.hd arg_typs in (ret, (schm, TMutable(t)))::(List.tl arg_typs) in 
     let _, s0 = check_statement (arg_typs@gamma) block in 
-    let gamma' = sub_gamma s0 gamma in
+    let gamma' = sub_gamma s0 @@ (List.hd arg_typs)::gamma in
     let args = sub_gamma s0 arg_typs in 
     let mapper' (name, (tvar_list, typ)) = 
     if tvar_list = [] then typ else raise @@ IllTyped "Quantifiers" in
     let arg_types = List.map mapper' args in
     let argtuple_type = List.tl arg_types in 
     let return_type = List.hd arg_types in
+    (* let return_type = match return_type with 
+    | TMutable t -> t
+    | _ -> failwith "Big problem here!" in  *)
     let fn_typ = TFun(TTuple(argtuple_type), return_type) in
     (fn_id, (typ_var_diff fn_typ gamma, fn_typ))::gamma', s0
     end

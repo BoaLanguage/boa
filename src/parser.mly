@@ -90,10 +90,14 @@ simple_stmt:
                                         Assign($2, $4)
                                         ]) }
     | VARKEYWORD VAR EQUALS expr        { Block([
-                                        Decl(None, $2);
+                                        MutableDecl(None, $2);
                                         Assign($2, $4)
                                         ]) }
-
+    | LET thint                         { Decl(Some(fst $2), snd $2) }
+    | LET VAR                           { Decl(None, $2) }
+    | VARKEYWORD thint                  { MutableDecl(Some(fst $2), snd $2) }
+    | VARKEYWORD VAR                    { MutableDecl(None, $2) }
+    
 compound_stmt:
     | iff                                { $1 }
     | DEF VAR paramlist ARROW 

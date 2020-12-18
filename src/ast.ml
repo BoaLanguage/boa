@@ -10,6 +10,7 @@ type typ =
   | TDict of typ * typ
   | TVar of tvar
   | TMutable of typ
+  | TLimbo of typ
   | TObj of {attrs: (var * typ) list; mattrs: (var * typ) list}
 
 type scheme = tvar list * typ

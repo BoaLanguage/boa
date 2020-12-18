@@ -99,6 +99,8 @@ let rec str_of_typ t =
     (str_of_typ tl) ^ " list"
   | TVar v -> "'" ^ (String.make 1 (Char.chr (v + 97)))
   | TDict (t1, t2) -> "Dict : " ^ (str_of_typ t1 ^ " : " ^ str_of_typ t2)
+  | TLimbo t -> "LIMBO: " ^ str_of_typ t
+  | TMutable t -> "MUTABLE: " ^ str_of_typ t
   | _ -> failwith "Unimplemented (str_of_typ)"
 
 
