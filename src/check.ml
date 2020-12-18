@@ -110,7 +110,6 @@ let sub_gamma (s : substitution) (gamma : mappings) : mappings =
   zp (vars) (zp foralls @@ substitute s types)
 
 let rec unify (constraints: constraints): substitution = 
-  Format.printf "\nCONSTRAINTS: %s" (str_of_constr constraints);
   match constraints with 
   | [] -> []
   | (t, t')::rest -> 
@@ -162,23 +161,14 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
     TFun(List.hd @@ substitute new_sub [arg_typ], expr_typ), new_sub
   | Call (e0, elist) -> 
     let fn_typ, s0 = check_expr gamma e0 in 
-    Format.printf "\n-----";
-    Format.printf "\nEXPR: "; print_expr e0;
-    Format.printf "\nSUB 0: %s" (str_of_sub s0);
-    Format.printf "\nFN TYPE: %s\n" (str_of_typ fn_typ);
     let new_gamma = sub_gamma s0 gamma in 
     let arg_typ, s1 = 
       (match elist with 
-      | e1::[] -> Format.printf "\nARG: "; print_expr e1;
-      check_expr new_gamma e1
+      | e1::[] -> check_expr new_gamma e1
       | _ -> failwith "Unimplemented fn call")
       in 
-      Format.printf "\nARG TYPE: %s" (str_of_typ arg_typ);
-      Format.printf "\nSUB 1: %s" (str_of_sub s1);
     let fresh = fresh_tvar () in 
     let s2 = unify [(List.hd @@ substitute s1 [fn_typ], TFun(arg_typ, fresh))] in 
-    Format.printf "CONSTR: %s\n" (str_of_constr [(List.hd @@ substitute s1 [fn_typ], TFun(arg_typ, fresh))]);
-    Format.printf "\nFINAL SUB: %s\n" (str_of_sub s2);
     List.hd @@ substitute s2 [fresh], s2@s1@s0
   | _ -> failwith "Unimplemented"
 
@@ -189,7 +179,6 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings =
   | Assign (v, e) -> 
     let t0, s0 = check_expr gamma e in 
     let gamma' = sub_gamma s0 gamma in 
-    Format.printf "SUBST: %s\n" (str_of_sub s0);
     (v, (typ_var_diff t0 gamma', t0))::gamma'
   | Pass
   | Block ([]) -> gamma

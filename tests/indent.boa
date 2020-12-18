@@ -1,3 +1,2 @@
 apply = lambda f -> (lambda x -> f(x))
-id = apply(lambda x -> x)
-x = id(10)
+omega_lite = lambda x -> x
