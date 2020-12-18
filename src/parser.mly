@@ -187,10 +187,6 @@ paramlist:
     | LPAREN RPAREN                     { [] }
     | LPAREN thintoptlist RPAREN        { $2 }
 
-thintlist:
-    | thint                             { [$1] }
-    | thintlist COMMA thint             { $1@[$3] }
-
 thintoptlist:
     | thintopt                          { [$1] }
     | VAR                               { [(None, $1)] }

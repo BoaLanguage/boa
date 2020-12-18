@@ -20,9 +20,11 @@ let str = ['"'] ([^'"'] | ['\\'] ['"'])* ['"']
 let small_str = ['\''] ([^'"'] | ['\\'] ['\''])* ['\'']
 let nl = ['\n'] ( ( ['\t'] | [' '] )* ['\n'] )* ( ['\t'] | [' '] )*
 let bs = [' ']
+let comment = ['#'] [^'\n']* ['\n']
 
 rule token = parse
 | ws               { token lexbuf }
+| comment          { token lexbuf }
 | "let"            { LET }
 | "var"            { VARKEYWORD }
 | nl as s          { NEWLINE(get_indent_level s) }

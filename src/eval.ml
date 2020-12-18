@@ -222,8 +222,8 @@ and evals (conf : configuration) : env =
     let b_result = evale guard sigma in
     match b_result with
     | VBool b' ->
-        if b' then evals (sigma, statement_true, next_statement, kappa)
-        else evals (sigma, statement_false, next_statement, kappa)
+        if b' then (ignore (evals (sigma, statement_true, next_statement, kappa)); sigma)
+        else (ignore (evals (sigma, statement_false, next_statement, kappa)); sigma)
     | _ -> raise @@ TypecheckerFail "If guard must be boolean"
   in
   let evaluate_while guard_expression body_statement =

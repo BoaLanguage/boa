@@ -24,6 +24,8 @@ let no_constraints = []
 let empty_substituition = []
 let empty_gamma = []
 
+let update k v lst =  (k, v)::List.remove_assoc k lst 
+
 module TypeVarSet = Set.Make(Int)
 
 let zp l = List.map2 (fun x y -> (x,y)) l
@@ -204,10 +206,10 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
   | List (h::t) -> begin 
     let t0, s0 = check_expr gamma h in 
     let gamma' = sub_gamma s0 gamma in 
-    let rest_typ, s2 = check_expr gamma (List(t)) in 
+    let rest_typ, s2 = check_expr gamma' (List(t)) in 
     let list_type = TList(t0) in 
     let s3 = unify [(list_type, rest_typ)] in 
-    (list_type, s3@s2@s0)
+    (List.hd @@ substitute s3 [list_type], s3@s2@s0)
     end
   | List [] -> TList(fresh_tvar ()), []
   | Dict ((e0, e1)::rest) -> 
@@ -218,25 +220,81 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
     let rest_typ, s2 = check_expr gamma'' (Dict(rest)) in 
     let dict_typ = (TDict(t0, t1)) in 
     let s3 = unify [(dict_typ, rest_typ)] in 
-    (dict_typ, s3@s2@s1@s0)
+    (List.hd @@ substitute s3 [dict_typ], s3@s2@s1@s0)
   | Dict [] -> 
     (TDict(fresh_tvar (), fresh_tvar ()), [])
   | _ -> failwith ""
 
 
-let rec check_statement (gamma : mappings) (statement: stmt) : mappings = 
+let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substitution = 
   match statement with 
-  | Exp e -> let _ = check_expr gamma e in gamma
+  | Exp e -> let _ = check_expr gamma e in gamma, []
+  | Decl (t_opt, v) -> 
+    let t = t_opt |?? fresh_tvar () in 
+    (v, ([], t))::gamma, []
+  | MutableDecl (t_opt, v) -> 
+    let t = t_opt |?? fresh_tvar () in 
+    (v, ([], TMutable(t)))::gamma, []
   | Assign (v, e) -> 
+    let sch = match List.assoc_opt v gamma with
+    | None -> raise @@ IllTyped ("Unbound variable " ^ v)
+    | Some sch -> sch in 
     let t0, s0 = check_expr gamma e in 
     let gamma' = sub_gamma s0 gamma in 
-    (v, (typ_var_diff t0 gamma', t0))::gamma'
+    let var_typ = init_scheme sch in 
+    let s1 = unify [(var_typ, t0)] in 
+    let gamma'' = sub_gamma s1 gamma' in 
+    let unified_type = List.hd @@ substitute s1 [t0] in 
+    (update v (typ_var_diff unified_type gamma, unified_type) gamma''), s1
   | Pass
-  | Block ([]) -> gamma
+  | Block ([]) -> gamma, []
   | Block (st::rest) -> 
-    let new_gamma = check_statement gamma st in 
-    check_statement new_gamma (Block(rest))
+    let new_gamma, s0 = check_statement gamma st in 
+    let new_gamma' = sub_gamma s0 new_gamma in 
+    check_statement new_gamma' (Block(rest))
+  | If (e0, st1, st2) -> 
+    let t0, s0 = check_expr gamma e0 in
+    let gamma' = sub_gamma s0 gamma in 
+    let gamma'' = (match t0 with 
+    | TVar i -> sub_gamma [(i, t_bool)] gamma'
+    | TBase s when t0 = t_bool -> gamma'
+    | _ -> raise @@ IllTyped "If guard must be boolean") 
+    in 
+    let _, s1 = check_statement gamma'' st1 in 
+    let gamma''' = sub_gamma s1 gamma'' in 
+    let _, s2 = check_statement gamma''' st2 in
+    (sub_gamma s2 gamma'), s2@s1@s0
+  | Def (rt_opt, fn_id, args, block) -> 
+    begin
+    let args' = (rt_opt, "return")::args in
+    let mapper (typ_opt, var) : (var * scheme) = 
+      let t = typ_opt |?? fresh_tvar () in
+      (var, ([], t)) in 
+    let arg_typs = List.map mapper args' in 
+    let _, s0 = check_statement (arg_typs@gamma) block in 
+    let gamma' = sub_gamma s0 gamma in
+    let args = sub_gamma s0 arg_typs in 
+    let mapper' (name, (tvar_list, typ)) = 
+    if tvar_list = [] then typ else raise @@ IllTyped "Quantifiers" in
+    let arg_types = List.map mapper' args in
+    let argtuple_type = List.tl arg_types in 
+    let return_type = List.hd arg_types in
+    let fn_typ = TFun(TTuple(argtuple_type), return_type) in
+    (fn_id, (typ_var_diff fn_typ gamma, fn_typ))::gamma', s0
+    end
+  | Print e -> 
+    let t0, s0 = check_expr gamma e in 
+    sub_gamma s0 gamma, s0
+  | Return e -> check_statement gamma (Assign("return", e))
+  (* begin
+    let t0, s0 = check_expr gamma e in 
+    match List.assoc_opt "return" gamma with
+    | None -> raise @@ IllTyped "Return outside of function body"
+    | Some ([], typ) -> sub_gamma s0 gamma, 
+    | _ -> raise @@ IllTyped "Quantifiers"
+  end *)
   | _ -> failwith "Unimplemented statement"
 
 let check (statement: stmt): mappings = 
-  check_statement [] statement
+  let gamma, sub = check_statement [] statement in
+  sub_gamma sub gamma

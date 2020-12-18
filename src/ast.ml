@@ -9,6 +9,7 @@ type typ =
   | TList of typ
   | TDict of typ * typ
   | TVar of tvar
+  | TMutable of typ
   | TObj of {attrs: (var * typ) list; mattrs: (var * typ) list}
 
 type scheme = tvar list * typ

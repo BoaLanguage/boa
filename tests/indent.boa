@@ -1,4 +1,2 @@
-d = {}
-lst = []
-d = {{}: {}}
-dictofints = {50 : ["test", "james"], 100 : []}
+#!./boa
+let x = ["STING", 1]
