@@ -1,14 +1,18 @@
 type var = string
 type tvar = int
 
+
 type typ =
   | TFun of typ * typ
   | TBase of string
   | TTuple of typ list
   | TList of typ
+  | TDict of typ * typ
   | TVar of tvar
+  | TObj of {attrs: (var * typ) list; mattrs: (var * typ) list}
 
 type scheme = tvar list * typ
+type mappings = (var * scheme) list
 
 type binop =
   | Plus

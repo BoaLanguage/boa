@@ -23,7 +23,7 @@
 %token <int> NEWLINE
 %token <int> INT
 %token <bool> BOOL
-%token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA FOR
+%token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA FOR LBRACE RBRACE
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
 %token EOF LESS GREATER LEQ GEQ NEQ CLASS WHILE MEMBER LIST
 %token COMMA MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
@@ -198,8 +198,8 @@ thintoptlist:
     | thintoptlist COMMA VAR            { $1@[(None, $3)] }
 
 dict:
-    | INDENT DEDENT                     { Dict([]) }
-    | INDENT kvplist DEDENT             { Dict($2) }
+    | LBRACE RBRACE                     { Dict([]) }
+    | LBRACE kvplist RBRACE             { Dict($2) }
 
 kvplist:
     | kvp                               { [$1] }

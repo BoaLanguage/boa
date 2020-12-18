@@ -86,7 +86,7 @@ let rec token_wrapper lexbuf =
   in 
   if !temp_tokens <> [] then 
     let token = List.hd !temp_tokens in 
-    temp_tokens := List.tl !temp_tokens; print_endline @@ str_of_token token; token 
+    temp_tokens := List.tl !temp_tokens; token 
   else if !indent_level < 0 then (print_endline "EOF"; EOF)  else
   let token = Lexer.token lexbuf in 
   match token with 
@@ -156,7 +156,7 @@ let () =
       Format.printf "Type checking skipped.@\n@\n"
     else
       let res = Check.check e in 
-      Format.printf "Inferred Types: [%s]\n" (res |> Check.str_of_gamma)
+      Format.printf "Inferred Types: [%s]\n" (res |> Pprint.str_of_gamma)
     (* (match e with
     | s -> Check.check_stmt s
     | Exp (exp) -> 

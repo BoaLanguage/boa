@@ -1,6 +1,7 @@
 open Ast
-
 (* Pretty printing helper functions *)
+
+
 let print_ident x =
   Format.printf "%s" x
 
@@ -80,19 +81,44 @@ let string_of_unop o =
   | Not -> "not"
   | _ -> failwith "Print"
 
-let str_of_typ t =
-  let rec loop t =
-    match t with
-    | TBase s -> s
-    | TFun (t1, t2) ->
-      "(" ^ (loop t1) ^ " -> " ^ (loop t2) ^ ")"
-    | TTuple lst ->
-      List.fold_left (fun acc t -> acc ^ " * " ^ (loop t)) "" lst
-    | TList tl ->
-      (loop tl) ^ " list"
-    | TVar v -> "TVAR " ^ (string_of_int v)
-  in
-  loop t
+let insert_delimiter_between_list (delim : string) (mapper : 'a -> string) (lst: 'a list): string  = 
+  let mapped = List.map mapper lst in
+    match mapped with
+    | [] -> ""
+    | h::[] -> h 
+    | h::t -> List.fold_left (fun acc n -> acc ^ delim ^ n) h t 
+
+let rec str_of_typ t =
+  match t with
+  | TBase s -> s
+  | TFun (t1, t2) ->
+    "(" ^ (str_of_typ t1) ^ " -> " ^ (str_of_typ t2) ^ ")"
+  | TTuple lst ->
+      insert_delimiter_between_list " * " (fun t -> (str_of_typ t)) lst
+  | TList tl ->
+    (str_of_typ tl) ^ " list"
+  | TVar v -> "'" ^ (String.make 1 (Char.chr (v + 97)))
+  | TDict (t1, t2) -> "Dict : " ^ (str_of_typ t1 ^ " : " ^ str_of_typ t2)
+  | _ -> failwith "Unimplemented (str_of_typ)"
+
+
+
+let str_of_int_list : int list -> string = 
+  insert_delimiter_between_list ", " (fun i -> String.make 1 @@ Char.chr @@ i + 97)
+
+let str_of_scheme sch = 
+  let ilist, t = sch in 
+  "\\./ " ^ str_of_int_list ilist ^ ". " ^ (str_of_typ t)
+let str_of_gamma : Ast.mappings -> string = 
+  insert_delimiter_between_list "\n" (fun (v, sch) -> v ^ " => " ^ str_of_scheme sch)
+
+let str_of_constr = 
+  List.fold_left 
+  (fun acc (t1, t2) -> acc ^ ", " ^ (str_of_typ t1) ^ " == " ^ (str_of_typ t2)) ""
+
+let str_of_sub = 
+  List.fold_left 
+  (fun acc (t1, t2) -> acc ^ ", " ^ (string_of_int t1) ^ " => " ^ (str_of_typ t2)) ""
 
 (* Pretty print type t *)
 let print_typ t =

@@ -1,2 +1,4 @@
-apply = lambda f -> (lambda x -> f(x))
-omega_lite = lambda x -> x
+d = {}
+lst = []
+d = {{}: {}}
+dictofints = {50 : ["test", "james"], 100 : []}

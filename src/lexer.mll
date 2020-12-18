@@ -68,6 +68,8 @@ rule token = parse
 | "print"          { PRINT }
 | "["              { LBRACK }
 | "]"              { RBRACK }
+| "{"              { LBRACE }
+| "}"              { RBRACE }
 | "\""
 | id as v          { VAR(v) }
 | digit+ as n      { INT(int_of_string n) }
