@@ -1,5 +1,5 @@
 #!./boa
-
+# Just the factorial function! Should see 4! printed
 def fact(x, acc):
   if x == 0:
     return acc

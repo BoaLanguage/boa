@@ -7,31 +7,39 @@ exception IllTyped of error_info
 type constraints = (typ * typ) list
 type substitution = (int * typ) list
 
-let num_tvars_used = ref (-1)
 
+(** A counter for the type variables used in type inference *)
+let num_tvars_used = ref (-1)
 let fresh_tvar () = num_tvars_used := !num_tvars_used + 1; TVar(!num_tvars_used)
 let reset_tvars () = num_tvars_used := -1
 
-let global_substitution : substitution ref = ref []
-
+(** Variables for base types *)
 let t_string = TBase("String")
 let t_int = TBase("Int")
 let t_bool = TBase("Bool")
 let t_none = TBase("None")
 let t_unit = TTuple []
 
+(** Useful constants for type-inference constructs *)
 let no_constraints = []
 let empty_substituition = []
 let empty_gamma = []
 
+(** [update k v lst] is the association list lst, but with v replaced as the 
+second entry in the tuple containing k as key. *)
 let update k v lst =  (k, v)::List.remove_assoc k lst 
+
+(** [assoc_opt_or_raise k lst] is the value corresponding to k in lst,
+unless k is not bound, in which case an error is raised *)
 let assoc_opt_or_raise k lst = 
 match List.assoc_opt k lst with 
 | None -> raise @@ IllTyped ("Unbound: " ^ k)
 | Some v -> v
 
+(** An integer set module *)
 module TypeVarSet = Set.Make(Int)
 
+(** zp and unzip are used to join and separate association lists *)
 let zp l = List.map2 (fun x y -> (x,y)) l
 let unzip l = (List.map fst l, List.map snd l) 
 let map_tuple (f : 'a list -> 'b list) l = 
@@ -42,11 +50,13 @@ let lookup_typ: (var -> mappings -> scheme option) = List.assoc_opt
 let any (f: 'a -> bool) : ('a list -> bool) = 
 List.fold_left (fun acc b -> acc || (f b)) false
 
+(** A null coalescing operator *)
 let (|??) (opt: 'a option) (default: 'a): 'a = 
   match opt with
   | Some t -> t
   | None -> default
 
+(** [substitute sigma lst] substitutes type variables in sigma into types in lst*)  
 let substitute (sigma: substitution) (lst : typ list) : typ list =
   let rec sub (n : int) (new_typ : typ) (old_typ : typ) : typ = 
   match old_typ with 
@@ -64,7 +74,8 @@ let substitute (sigma: substitution) (lst : typ list) : typ list =
   let f (tvar, typ) (acc: typ list)  = 
     List.map (sub tvar typ) acc in
   List.fold_right f sigma lst
-  
+
+(** [i ==> typ] checks if type variable i is in typ*)  
 let rec (==>) (i: tvar) (typ: typ): bool = 
   match typ with 
   | TVar i' -> i = i'
@@ -77,6 +88,7 @@ let rec (==>) (i: tvar) (typ: typ): bool =
   | TLimbo (t) -> i ==> t
   | _ -> failwith "Unimplemented ==>"
 
+(** [free_type_variables t bound] is the set of type variables in t not in bound *)
 let rec free_type_variables (t : typ) (bound : tvar list) : TypeVarSet.t = 
   match t with 
   | TVar i -> if List.mem i bound then TypeVarSet.empty else TypeVarSet.add i TypeVarSet.empty
@@ -87,18 +99,25 @@ let rec free_type_variables (t : typ) (bound : tvar list) : TypeVarSet.t =
   | TDict (t1, t2) -> TypeVarSet.union (free_type_variables t1 bound) (free_type_variables t2 bound)
   | TLimbo (t) -> free_type_variables t bound
   | TMutable (t) -> free_type_variables t bound
-  | _ -> failwith "Unimplemomted"
+  | _ -> failwith "Unimplemented"
 
+(** [typ_var_diff t1 gamma] is a list of integers representing the set of 
+free type variables present in typ t1 that do not occur as free type variables
+in any of the type assignments in gamma. *)
 let rec typ_var_diff (t1 : typ) (gamma : mappings) : int list = 
   let t1_ftv = free_type_variables t1 [] in 
   let gamma_ftv = List.fold_left (fun acc (_, (lst, t)) -> TypeVarSet.union (free_type_variables t lst) acc) TypeVarSet.empty gamma in 
   TypeVarSet.elements (TypeVarSet.diff t1_ftv gamma_ftv)
-  
+
+(** [sub_gamma s gamma] is gamma, with all occurrences of type variables
+that have type assignments in s, replaced with those type assignments. *)
 let sub_gamma (s : substitution) (gamma : mappings) : mappings = 
   let vars, schemes = unzip gamma in 
   let foralls, types = unzip schemes in 
   zp (vars) (zp foralls @@ substitute s types)
 
+(** [unify constraints] is a substitution generated after running unification
+on the set of constraints provided. *)
 let rec unify (constraints: constraints): substitution = 
   match constraints with 
   | [] -> []
@@ -128,6 +147,8 @@ let rec unify (constraints: constraints): substitution =
       raise @@ IllTyped "Typing of program led to above impossible constraints"
     end
 
+(** [init_scheme scheme] is a typ, instantiating all of the type
+variables under the 'forall' - essentially implementing polymorphism. *)
 let rec init_scheme (scheme: scheme): typ = 
   let rec replace old_tvar fresh tau = 
     match tau with 
@@ -143,6 +164,8 @@ let rec init_scheme (scheme: scheme): typ =
   | ([], t) -> t
   | (tv::rest, t) -> init_scheme (rest, replace tv (fresh_tvar ()) t)
 
+(** [check_expr gamma e] is a (typ * substitution) pair of the
+inferred type and type substitution, after checking [e]. *)
 let rec check_expr (gamma : mappings) (e : exp) : typ * substitution = 
   match e with 
   | Int i -> (t_int, [])
@@ -242,7 +265,9 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
     (TDict(fresh_tvar (), fresh_tvar ()), [])
   | _ -> failwith ""
 
-
+(** [check_statement gamma statement] is a (mappings * substitution) pair of
+inferred types and type substitutions, after checking [statement] and 
+all sub-statements and expressions. *)
 let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substitution = 
   match statement with 
   | Exp e -> let _ = check_expr gamma e in gamma, []
@@ -331,10 +356,12 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
     sub_gamma s g, s
   | _ -> failwith "Unimplemented statement"
 
+(** [check stmt] is the mappings from identifiers to schemes
+after typechecking the program. *)
 let check (statement: stmt): mappings = 
   let gamma, sub = check_statement [] statement in
   let gamma' = sub_gamma sub gamma in
   let gamma'' = List.map (fun (v, sch) -> num_tvars_used := -1;
   let reset_typ = init_scheme sch in
-  (v, (free_type_variables reset_typ [] |> TypeVarSet.elements, reset_typ))) gamma in
+  (v, (free_type_variables reset_typ [] |> TypeVarSet.elements, reset_typ))) gamma' in
   gamma''

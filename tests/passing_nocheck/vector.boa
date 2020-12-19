@@ -1,3 +1,4 @@
+#Classes are evaluated but not typechecked. This is a simple vector class
 class Vector:
 
   member var x : Int

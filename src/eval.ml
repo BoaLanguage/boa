@@ -94,7 +94,7 @@ let eval_fun (f : stmt) (e : env) : value =
       e' := (v, closure) :: e;
       closure
   | _ -> raise @@ TypecheckerFail "Not a function definition"
-
+(**[evale e s] evaluates expression e with environment s*)
 let rec evale (e : exp) (s : env) : value =
   let evaluate_var v =
     let lookup_result = lookup s v in
@@ -298,7 +298,7 @@ and evals (conf : configuration) : env =
   | Class (name, super, stmt), c -> evaluate_class name super stmt
   | Exp (e), c -> let _  = evale e sigma in evals (sigma, Pass, c, kappa)
   | _ -> raise @@ Unimplemented "Statement"
-
+(**[call callable args] evaluates the application of a closure-like object *)
 and call (callable : value) (args : value list) : value =
   let zip = List.map2 (fun x y -> (x, y)) in
   let call_method obj closure =

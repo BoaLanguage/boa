@@ -1,7 +1,6 @@
 open Ast
 (* Pretty printing helper functions *)
 
-
 let print_ident x =
   Format.printf "%s" x
 
@@ -122,27 +121,6 @@ let str_of_sub =
   List.fold_left 
   (fun acc (t1, t2) -> acc ^ ", " ^ ((String.make 1 (Char.chr (t1 + 97)))) ^ " => " ^ (str_of_typ t2)) ""
 
-(* Pretty print type t *)
-let print_typ t =
-  let rec loop t =
-    match t with
-    | TBase s -> print_ident s
-    | TFun (t1, t2) ->
-      Format.printf "@[<2>(";
-      print_binop loop "->" t1 t2;
-      Format.printf ")@]"
-    | TTuple ts ->
-      Format.printf "@[<2>(";
-      print_seq loop " * " ts;
-      Format.printf ")@]"
-    | TList tl ->
-      Format.printf "@[<2>(";
-      print_unop loop "List" tl;
-      Format.printf ")@]"
-    | TVar v -> Format.printf "TVar %s" (string_of_int v);
-  in
-  loop t
-
 let rec print_expr e = 
   match e with 
   | Var v -> print_ident v
@@ -158,7 +136,7 @@ let rec print_expr e =
   | Skip -> Format.printf "None"
   | Lam (v, t_opt, e) -> 
     Format.printf "lambda %s -> " v; print_expr e;
-  | _ -> Format.printf "yikes"
+  | _ -> Format.printf "Unimplemented Expression print"
 
 and print_list lst = 
   match lst with
@@ -179,7 +157,7 @@ let rec print_stmt s =
   | Decl (t, v) -> 
   Format.printf "%s : " v;
   (match t with 
-  | Some t -> print_typ t
+  | Some t -> Format.printf "%s" (str_of_typ t)
   | None -> ())
   | AttrAssgn (ex, n, va) -> 
   print_expr (AttrAccess(ex, n));
@@ -206,7 +184,7 @@ let rec print_stmt s =
   | Def (t1, fn, args, b) -> 
   Format.printf "Function %s -> " fn;
   (match t1 with 
-  | Some t -> print_typ t
+  | Some t -> Format.printf "%s" (str_of_typ t);
   | None -> Format.printf "None");
   Format.printf "\n";
   print_stmt b;
