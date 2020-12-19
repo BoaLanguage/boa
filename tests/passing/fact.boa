@@ -4,4 +4,6 @@ def fact(x, acc):
   if x == 0:
     return acc
   else:      
-    return fact(x-1, 1 < acc)
+    return fact(x-1, x * acc)
+
+  print fact(4)

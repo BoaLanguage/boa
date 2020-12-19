@@ -109,7 +109,7 @@ let str_of_int_list lst : string =
 
 let str_of_scheme sch = 
   let ilist, t = sch in 
-  "\\./ " ^ str_of_int_list ilist ^ ". " ^ (str_of_typ t)
+  (str_of_typ t)
 
 let str_of_gamma : Ast.mappings -> string = 
   insert_delimiter_between_list "\n" (fun (v, sch) -> v ^ " => " ^ str_of_scheme sch)

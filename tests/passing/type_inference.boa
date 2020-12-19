@@ -17,7 +17,7 @@ def compose_fns(f2, f1, arg):
 # Bool
 let should_be_true = compose_fns(is_positive, add_5, 10)
 
-#Should be Int -> Int -> Int
+# Should be Int -> Int -> Int
 def fact(x, acc):
   if x == 0:
     return acc

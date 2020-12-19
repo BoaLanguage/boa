@@ -333,4 +333,8 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
 
 let check (statement: stmt): mappings = 
   let gamma, sub = check_statement [] statement in
-  sub_gamma sub gamma
+  let gamma' = sub_gamma sub gamma in
+  let gamma'' = List.map (fun (v, sch) -> num_tvars_used := -1;
+  let reset_typ = init_scheme sch in
+  (v, (free_type_variables reset_typ [] |> TypeVarSet.elements, reset_typ))) gamma in
+  gamma''
