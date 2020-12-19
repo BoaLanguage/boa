@@ -1,0 +1,8 @@
+# This should fail to infer type,
+# because this program would require acc to
+# be both a boolean and an integer
+def fact(x, acc):
+  if x == 0:
+    return acc
+  else:      
+    return fact(x-1, 1 < acc)

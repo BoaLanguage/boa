@@ -47,20 +47,23 @@ let (|??) (opt: 'a option) (default: 'a): 'a =
   | Some t -> t
   | None -> default
 
-let substitute (sigma: substitution): typ list -> typ list =
-  let rec sub (typ: typ) : typ = 
-  match typ with 
-  | TVar (i) -> List.assoc_opt i sigma |?? typ
+let substitute (sigma: substitution) (lst : typ list) : typ list =
+  let rec sub (n : int) (new_typ : typ) (old_typ : typ) : typ = 
+  match old_typ with 
+  | TVar (i) when i = n -> new_typ
+  | TVar _ -> old_typ
   | TBase s as typ -> typ
-  | TFun(t1, t2) -> TFun(sub t1, sub t2)
-  | TList t -> TList(sub t)
-  | TTuple lst -> TTuple(List.map sub lst)
-  | TDict (t1, t2) -> TDict (sub t1, sub t2)
-  | TLimbo t -> TLimbo (sub t)
-  | TMutable t -> TMutable (sub t)
+  | TFun(t1, t2) -> TFun(sub n new_typ t1, sub n new_typ t2)
+  | TList t -> TList(sub n new_typ t)
+  | TTuple lst -> TTuple(List.map (sub n new_typ) lst)
+  | TDict (t1, t2) -> TDict (sub n new_typ t1, sub n new_typ t2)
+  | TLimbo t -> TLimbo (sub n new_typ t)
+  | TMutable t -> TMutable (sub n new_typ t)
   | _ -> failwith "Unimplemented (substitute)" 
   in 
-  List.map @@ sub
+  let f (tvar, typ) (acc: typ list)  = 
+    List.map (sub tvar typ) acc in
+  List.fold_right f sigma lst
   
 let rec (==>) (i: tvar) (typ: typ): bool = 
   match typ with 
@@ -161,40 +164,29 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
     let fn_typ, s0 = check_expr gamma e0 in 
     let new_gamma = sub_gamma s0 gamma in 
 
-    let rec get_app gamma fn args = 
+    let rec get_app app_gamma fn args = 
       let fresh = fresh_tvar () in 
       match args with 
       | e::[] -> 
-      let arg_typ, s = check_expr gamma e in 
+      let arg_typ, s = check_expr app_gamma e in 
       let s1 = unify [(List.hd @@ substitute s [fn], TFun(arg_typ, fresh))] in
       List.hd @@ substitute s1 [fresh], s1@s
       | e::rest ->
-      let arg_typ, s = check_expr gamma e in 
-      let gamma' = sub_gamma s gamma in 
+      let arg_typ, s = check_expr app_gamma e in 
+      let gamma' = sub_gamma s app_gamma in 
       let s1 = unify [(List.hd @@ substitute s [fn], TFun(arg_typ, fresh))] in 
-      get_app gamma' (List.hd @@ substitute s1 [fresh]) rest
+      let gamma'' = sub_gamma s1 gamma' in 
+      let typ, sub = get_app gamma'' (List.hd @@ substitute (s1@s) [fresh]) rest in 
+
+      List.hd @@ substitute (sub@s1@s) [typ], sub@s1@s
       | [] -> 
       let s = unify [(fn, TFun(t_unit, fresh))] in 
       (List.hd @@ substitute s [fresh]), s
     in
 
-    get_app new_gamma fn_typ elist
-
-
-    (* let arg_typ, s1 = 
-      (match elist with 
-      | e1::[] -> check_expr new_gamma e1
-      | _ -> failwith "Unimplemented fn call")
-      in 
-    let fresh = fresh_tvar () in 
-    let s2 = unify [(List.hd @@ substitute s1 [fn_typ], TFun(arg_typ, fresh))] in 
-    List.hd @@ substitute s2 [fresh], s2@s1@s0 *)
+    let fntype, s = get_app new_gamma fn_typ elist in 
+    List.hd @@ substitute s [fntype], s
   | Skip -> t_unit, empty_substituition
-  (* |AttrAccess (obj_exp, attribute_name) -> 
-    begin
-    let obj_type, substitution = check_expr gamma obj_exp in 
-    if List.
-    end *)
   | SliceAccess (_, _) -> failwith "Unimplemented slice"
   | Binary (binop, e0, e1) -> 
     begin
@@ -256,7 +248,6 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
   | Exp e -> let _ = check_expr gamma e in gamma, []
   | Decl (t_opt, v) -> 
     let t = t_opt |?? fresh_tvar () in 
-    print_endline (str_of_gamma @@ (v, ([], TLimbo(t)))::gamma);
     (v, ([], TLimbo(t)))::gamma, []
   | MutableDecl (t_opt, v) -> 
     let t = t_opt |?? fresh_tvar () in 
@@ -269,12 +260,15 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
       | (lst, TMutable(t)) -> (lst, t), true
       | _ -> raise @@ IllTyped ("Illegal assignment to " ^ v) in
     let t0, s0 = check_expr gamma e in 
+
     let gamma' = sub_gamma s0 gamma in 
     let var_typ = init_scheme sch in 
+    let var_typ = List.hd @@ substitute s0 [var_typ] in 
     let s1 = unify [(var_typ, t0)] in 
     let gamma'' = sub_gamma s1 gamma' in 
     let unified_type = List.hd @@ substitute s1 [var_typ] in 
     let unified_type = if is_mut then TMutable(unified_type) else unified_type in 
+
     (update v (typ_var_diff unified_type gamma, unified_type) gamma''), s1@s0
   end
   | Pass -> gamma, []
@@ -282,7 +276,8 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
     let f (old_gamma, sub) stmt = 
       let new_gamma, sub' = check_statement old_gamma stmt in
       (new_gamma, sub'@sub)
-    in List.fold_left f (gamma, []) stmt_lst 
+    in 
+    List.fold_left f (gamma, []) stmt_lst 
   | If (e0, st1, st2) -> 
     let t0, s0 = check_expr gamma e0 in
     let gamma' = sub_gamma s0 gamma in 
@@ -303,11 +298,13 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
       (var, ([], t)) in 
     let arg_typs = List.map mapper args' in 
     let arg_typs = let (ret, (schm, t)) = List.hd arg_typs in (ret, (schm, TMutable(t)))::(List.tl arg_typs) in 
-    let _, s0 = check_statement ((fn_id, ([], fresh_tvar()))::arg_typs@gamma) block in 
-    let gamma' = sub_gamma s0 @@ (List.hd arg_typs)::gamma in
+    let fn_name_type = fresh_tvar () in
+    let body_gamma = (fn_id, ([], fn_name_type))::arg_typs@gamma in 
+    let _, s0 = check_statement body_gamma block in 
+    let gamma' = sub_gamma s0 @@ ((fn_id, ([], fn_name_type))::(List.hd arg_typs)::gamma) in
     let args = sub_gamma s0 arg_typs in 
     let mapper' (name, (tvar_list, typ)) = 
-    if tvar_list = [] then typ else raise @@ IllTyped "Quantifiers" in
+      if tvar_list = [] then typ else raise @@ IllTyped "Quantifiers" in
     let arg_types = List.map mapper' args in
     let arg_typ_list = List.tl arg_types in 
     let return_type = List.hd arg_types in
@@ -321,20 +318,17 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
       | [] -> TFun(t_unit, return_type)
       in
     let fn_typ = make_fn_def arg_typ_list in
-    let new_gamma = (fn_id, (typ_var_diff fn_typ gamma, fn_typ))::gamma' in 
-    List.remove_assoc "return" new_gamma, s0
+    let slast = unify [(fn_typ, List.hd @@ substitute s0 [fn_name_type])] in 
+    let new_fn_typ = List.hd @@ substitute (slast@s0) [fn_typ] in 
+    let new_gamma = sub_gamma slast @@ update fn_id (typ_var_diff new_fn_typ gamma, new_fn_typ) gamma' in 
+    List.remove_assoc "return" new_gamma, slast@s0
     end
   | Print e -> 
     let t0, s0 = check_expr gamma e in 
     sub_gamma s0 gamma, s0
-  | Return e -> check_statement gamma (Assign("return", e))
-  (* begin
-    let t0, s0 = check_expr gamma e in 
-    match List.assoc_opt "return" gamma with
-    | None -> raise @@ IllTyped "Return outside of function body"
-    | Some ([], typ) -> sub_gamma s0 gamma, 
-    | _ -> raise @@ IllTyped "Quantifiers"
-  end *)
+  | Return e -> 
+    let g, s = check_statement gamma (Assign("return", e)) in 
+    sub_gamma s g, s
   | _ -> failwith "Unimplemented statement"
 
 let check (statement: stmt): mappings = 

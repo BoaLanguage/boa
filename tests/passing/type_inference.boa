@@ -1,0 +1,29 @@
+# In this demo, we see how Hindley-Milner type inference
+# obtains the most general types for the following functions
+
+# ('a -> 'b) -> ('a -> 'b)
+let apply_fn = lambda f -> lambda x -> f(x)
+
+# Int -> Int
+let add_5 = apply_fn(lambda x -> x + 5)
+
+# Int -> Bool
+let is_positive = apply_fn(lambda x -> x > 0)
+
+# ('b -> 'c) -> (('a -> 'b) -> ('a -> 'c))
+def compose_fns(f2, f1, arg):
+  return f2(f1(arg))
+
+# Bool
+let should_be_true = compose_fns(is_positive, add_5, 10)
+
+#Should be Int -> Int -> Int
+def fact(x, acc):
+  if x == 0:
+    return acc
+  else:
+    return fact(x - 1 , acc * x)
+let should_be_42 = fact(7,1) / 120
+# Boa has built-in partial application, for both lambdas
+# and functions
+let is_f_of_int_positive = compose_fns(is_positive)

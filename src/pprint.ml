@@ -104,14 +104,13 @@ let rec str_of_typ t =
   | TMutable t -> "MUTABLE: " ^ str_of_typ t
   | _ -> failwith "Unimplemented (str_of_typ)"
 
-
-
-let str_of_int_list : int list -> string = 
-  insert_delimiter_between_list ", " (fun i -> String.make 1 @@ Char.chr @@ i + 97)
+let str_of_int_list lst : string = 
+  insert_delimiter_between_list ", " (fun i -> String.make 1 @@ Char.chr @@ (i) + 97) lst
 
 let str_of_scheme sch = 
   let ilist, t = sch in 
   "\\./ " ^ str_of_int_list ilist ^ ". " ^ (str_of_typ t)
+
 let str_of_gamma : Ast.mappings -> string = 
   insert_delimiter_between_list "\n" (fun (v, sch) -> v ^ " => " ^ str_of_scheme sch)
 
@@ -121,7 +120,7 @@ let str_of_constr =
 
 let str_of_sub = 
   List.fold_left 
-  (fun acc (t1, t2) -> acc ^ ", " ^ (string_of_int t1) ^ " => " ^ (str_of_typ t2)) ""
+  (fun acc (t1, t2) -> acc ^ ", " ^ ((String.make 1 (Char.chr (t1 + 97)))) ^ " => " ^ (str_of_typ t2)) ""
 
 (* Pretty print type t *)
 let print_typ t =
@@ -267,13 +266,16 @@ let rec print_value (v : value) =
     Format.printf ", ";
     print_value (VList(rest)))
   | VObj l -> 
-    (match l with 
-    | [] -> Format.printf "obj."
-    | (v, va)::rest -> 
-    Format.printf "%s <- " v;
-    print_value va;
-    Format.printf ", ";
-    print_value (VObj (rest)));
+      Format.printf "{\n";
+      let rec loop l = 
+      match l with 
+      | [] -> ()
+      | (v, va)::rest -> 
+      Format.printf "\t%s <- " v;
+      print_value va;
+      Format.printf "\n";
+      loop rest in 
+      loop l; Format.printf "\n}\n";
   | VNone -> Format.printf "None";
   | VPreObj (a) -> Format.printf "Preobj";
   | VMethodCall (obj, m) -> 

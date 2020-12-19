@@ -1,0 +1,7 @@
+#!./boa
+
+def fact(x, acc):
+  if x == 0:
+    return acc
+  else:      
+    return fact(x-1, 1 < acc)

@@ -87,13 +87,12 @@ let rec token_wrapper lexbuf =
   if !temp_tokens <> [] then 
     let token = List.hd !temp_tokens in 
     temp_tokens := List.tl !temp_tokens; token 
-  else if !indent_level < 0 then (print_endline "EOF"; EOF)  else
+  else if !indent_level < 0 then (EOF)  else
   let token = Lexer.token lexbuf in 
   match token with 
   | NEWLINE (i) -> 
     begin
       let level = !indent_level in
-      print_endline "EOL";
       if i > level then 
         (indent_level := i;
         dedent_stack := i::!dedent_stack;
@@ -109,12 +108,11 @@ let rec token_wrapper lexbuf =
         EOL
     end
   | EOF -> let _, dedent_list = find_dedents !dedent_stack 0 [EOL] in 
-        print_int (List.length dedent_list);
         indent_level := -1;
         dedent_stack := [];
         temp_tokens := dedent_list;
         EOL
-  | _ -> print_endline @@ str_of_token token; token
+  | _ -> token
 
 let rec print_tokens token_fun lexbuf = 
   let token = token_fun lexbuf in 
@@ -144,33 +142,17 @@ let () =
         pos.Lexing.pos_lnum (pos.Lexing.pos_cnum - pos.Lexing.pos_bol);
       exit 1 in
 
-  (* (3) Pretty-print the expression. *)
-  let _ =
-    Format.printf "@[";
-    Format.printf "Expression:@\n  @[";
-    (Pprint.print_stmt e);
-    Format.printf "@]@\n@\n" in
-
   (* (4) Typecheck the expression. *)
   let _ = if !nocheck then
       Format.printf "Type checking skipped.@\n@\n"
     else
       let res = Check.check e in 
-      Format.printf "Inferred Types: [%s]\n" (res |> Pprint.str_of_gamma)
-    (* (match e with
-    | s -> Check.check_stmt s
-    | Exp (exp) -> 
-      let t = Check.check_exp exp in
-      Format.printf "@[";
-      Format.printf "Type:@\n  @[";
-      Pprint.print_typ t;
-      Format.printf "@]@\n@\n"
-    | _ -> failwith "not a stmt") *)
+      Format.printf "Inferred Types: [\n%s\n]\n" (res |> Pprint.str_of_gamma)
   in
 
   (* (5) Evaluate the expression. *)
   let _ =
-    Format.printf "Evaluating the expression...@\n@\n";
+    Format.printf "Evaluating the expression...@\n";
     Format.print_flush () in
 
   let v = Eval.evals (Eval.make_configuration e) in

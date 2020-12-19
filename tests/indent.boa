@@ -1,9 +1,0 @@
-#!./boa
-
-def fact(x, acc):
-  if x == 0:
-    return acc
-  else:
-    return fact(x - 1, x * acc)
-
-let should_be_24 = fact(4, "STRING")

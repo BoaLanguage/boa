@@ -1,0 +1,21 @@
+# Returns the value of fun applied to arg
+# for count iterations
+def repeat(fun, arg, count : Int):
+  if count == 0:
+    return arg
+  else:
+    if count == 1:
+      return fun(arg)
+    else:
+      return fun(repeat(fun, arg, count - 1))
+
+# This function utilizes repeat in order to
+# add the number 1 to x, y times
+def add_maker(x : Int) -> Int -> Int:
+
+  def add_x(y : Int) -> Int:
+    return repeat(lambda x -> x + 1, x, y)
+
+  return add_x
+
+let number = (add_maker(5)(3))
