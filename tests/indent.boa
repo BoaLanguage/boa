@@ -1,4 +1,9 @@
 #!./boa
-def add5(x):
-  return x + 5
-var z = add5(532)
+
+def fact(x, acc):
+  if x == 0:
+    return acc
+  else:
+    return fact(x - 1, x * acc)
+
+let should_be_24 = fact(4, "STRING")

@@ -311,6 +311,17 @@ and call (callable : value) (args : value list) : value =
     | v -> v
   in
   let call_closure params body env_ref =
+    if (List.length args < List.length params) then 
+    let rec take_tail n lst = if n = 0 then lst 
+    else match lst with 
+    |[] -> failwith "error" 
+    |h::t -> take_tail (n - 1) t in
+    
+    let unbound_params = take_tail (List.length args) params in 
+    let bound_params = take (List.length args) params in  
+    let new_env = ref ((zip bound_params args) @ !env_ref) in
+    VClosure(unbound_params, body, new_env)
+    else 
     let callenv =
       match args with [] -> !env_ref | _ -> ("return", VRef(ref None)) :: zip params args @ !env_ref
     in

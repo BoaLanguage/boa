@@ -214,3 +214,5 @@ exprlist:
 
 tuple:
     | LPAREN exprlist RPAREN            { Tuple($2) }
+    | LPAREN exprlist COMMA RPAREN      { Tuple($2) }
+    | LPAREN expr COMMA RPAREN          { Tuple([$2]) }

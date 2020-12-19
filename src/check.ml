@@ -27,7 +27,7 @@ let empty_gamma = []
 let update k v lst =  (k, v)::List.remove_assoc k lst 
 let assoc_opt_or_raise k lst = 
 match List.assoc_opt k lst with 
-| None -> raise @@ IllTyped ("Unbound" ^ k)
+| None -> raise @@ IllTyped ("Unbound: " ^ k)
 | Some v -> v
 
 module TypeVarSet = Set.Make(Int)
@@ -121,7 +121,8 @@ let rec unify (constraints: constraints): substitution =
       | TList (t), TList(t') -> unify @@ (t,t')::rest 
       | TDict (t1, t2), TDict(t1', t2') ->
         unify @@ ((t1, t1') :: (t2, t2') :: rest)
-      | _ -> raise @@ IllTyped "Typing of program led to above impossible constraints"
+      | _ -> constraints |> str_of_constr |> Format.printf "Constraints: %s \n"; 
+      raise @@ IllTyped "Typing of program led to above impossible constraints"
     end
 
 let rec init_scheme (scheme: scheme): typ = 
@@ -146,7 +147,8 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
   | String s -> (t_string, [])
   | Var v -> 
     (match lookup_typ v gamma with 
-    | None -> raise @@ IllTyped "Unbound variable"
+    | None -> raise @@ IllTyped ("Unbound variable " ^ v)
+    | Some (_, TLimbo _) -> raise @@ (IllTyped ("Uninitialized variable " ^ v))
     | Some scheme -> 
     init_scheme scheme, [])
   | Lam (v, t_opt, exp) -> 
@@ -158,15 +160,36 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
   | Call (e0, elist) -> 
     let fn_typ, s0 = check_expr gamma e0 in 
     let new_gamma = sub_gamma s0 gamma in 
-    let arg_typ, s1 = 
+
+    let rec get_app gamma fn args = 
+      let fresh = fresh_tvar () in 
+      match args with 
+      | e::[] -> 
+      let arg_typ, s = check_expr gamma e in 
+      let s1 = unify [(List.hd @@ substitute s [fn], TFun(arg_typ, fresh))] in
+      List.hd @@ substitute s1 [fresh], s1@s
+      | e::rest ->
+      let arg_typ, s = check_expr gamma e in 
+      let gamma' = sub_gamma s gamma in 
+      let s1 = unify [(List.hd @@ substitute s [fn], TFun(arg_typ, fresh))] in 
+      get_app gamma' (List.hd @@ substitute s1 [fresh]) rest
+      | [] -> 
+      let s = unify [(fn, TFun(t_unit, fresh))] in 
+      (List.hd @@ substitute s [fresh]), s
+    in
+
+    get_app new_gamma fn_typ elist
+
+
+    (* let arg_typ, s1 = 
       (match elist with 
       | e1::[] -> check_expr new_gamma e1
       | _ -> failwith "Unimplemented fn call")
       in 
     let fresh = fresh_tvar () in 
     let s2 = unify [(List.hd @@ substitute s1 [fn_typ], TFun(arg_typ, fresh))] in 
-    List.hd @@ substitute s2 [fresh], s2@s1@s0
-  |Skip -> t_unit, empty_substituition
+    List.hd @@ substitute s2 [fresh], s2@s1@s0 *)
+  | Skip -> t_unit, empty_substituition
   (* |AttrAccess (obj_exp, attribute_name) -> 
     begin
     let obj_type, substitution = check_expr gamma obj_exp in 
@@ -280,19 +303,26 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
       (var, ([], t)) in 
     let arg_typs = List.map mapper args' in 
     let arg_typs = let (ret, (schm, t)) = List.hd arg_typs in (ret, (schm, TMutable(t)))::(List.tl arg_typs) in 
-    let _, s0 = check_statement (arg_typs@gamma) block in 
+    let _, s0 = check_statement ((fn_id, ([], fresh_tvar()))::arg_typs@gamma) block in 
     let gamma' = sub_gamma s0 @@ (List.hd arg_typs)::gamma in
     let args = sub_gamma s0 arg_typs in 
     let mapper' (name, (tvar_list, typ)) = 
     if tvar_list = [] then typ else raise @@ IllTyped "Quantifiers" in
     let arg_types = List.map mapper' args in
-    let argtuple_type = List.tl arg_types in 
+    let arg_typ_list = List.tl arg_types in 
     let return_type = List.hd arg_types in
-    (* let return_type = match return_type with 
+    let return_type = match return_type with 
     | TMutable t -> t
-    | _ -> failwith "Big problem here!" in  *)
-    let fn_typ = TFun(TTuple(argtuple_type), return_type) in
-    (fn_id, (typ_var_diff fn_typ gamma, fn_typ))::gamma', s0
+    | _ -> failwith "Big problem here!" in 
+    let rec make_fn_def args = 
+      match args with 
+      | typ::[] -> TFun(typ, return_type)
+      | typ::rest -> TFun(typ, make_fn_def rest)
+      | [] -> TFun(t_unit, return_type)
+      in
+    let fn_typ = make_fn_def arg_typ_list in
+    let new_gamma = (fn_id, (typ_var_diff fn_typ gamma, fn_typ))::gamma' in 
+    List.remove_assoc "return" new_gamma, s0
     end
   | Print e -> 
     let t0, s0 = check_expr gamma e in 

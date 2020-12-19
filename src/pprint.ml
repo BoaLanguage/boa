@@ -94,6 +94,7 @@ let rec str_of_typ t =
   | TFun (t1, t2) ->
     "(" ^ (str_of_typ t1) ^ " -> " ^ (str_of_typ t2) ^ ")"
   | TTuple lst ->
+      "TUPLE: " ^
       insert_delimiter_between_list " * " (fun t -> (str_of_typ t)) lst
   | TList tl ->
     (str_of_typ tl) ^ " list"
