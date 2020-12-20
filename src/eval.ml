@@ -63,7 +63,7 @@ let bool_of_value (v : value) : bool =
   match v with VBool b -> b | _ -> raise @@ TypecheckerFail "Expected boolean"
 
 let rec pow (a : int) (b : int) : int =
-  if b = 0 then 1 else if b = 1 then a else pow (a * a) (b - 1)
+  if b = 0 then 1 else if b = 1 then a else a * pow (a) (b - 1)
 
 let evalb (b : binop) (l : value) (r : value) : value =
   match b with
