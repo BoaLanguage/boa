@@ -8,10 +8,10 @@ for f in tests/passing/*; do
     echo "\`\`\`";
 done;
 echo "## Running tests without type-checking..."	
-for f in tests/passing/*; do 
+for f in tests/passing_nocheck/*; do 
     echo "### File: $f";
     echo "\`\`\`";
-    ./bin/boa $f ;
+    ./bin/boa $f -nocheck;
     echo "\`\`\`";
 done;
 

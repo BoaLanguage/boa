@@ -23,7 +23,9 @@ def fact(x, acc):
     return acc
   else:
     return fact(x - 1 , acc * x)
+
 let should_be_42 = fact(7,1) / 120
+
 # Boa has built-in partial application, for both lambdas
 # and functions
 let is_f_of_int_positive = compose_fns(is_positive)

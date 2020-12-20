@@ -6,4 +6,4 @@ def fact(x, acc):
   else:      
     return fact(x-1, x * acc)
 
-  print fact(4)
+let z = fact(4, 1)
