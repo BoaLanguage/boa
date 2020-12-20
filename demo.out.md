@@ -33,14 +33,14 @@ repeat: Some closure
 ### File: tests/passing/test.boa
 ```
 Inferred Types: [
-x => MUTABLE: Int
+x => MUTABLE: Dict : Int : String list
 ]
 Evaluating the expression...
 
 
 State After Execution:
   
-x: mutable (3)
+x: mutable ({}, (5: james), {}, (100: test), {}, )
 ```
 ### File: tests/passing/tuple.boa
 ```
