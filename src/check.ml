@@ -191,27 +191,19 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
   | Call (e0, elist) -> 
     let fn_typ, s0 = check_expr gamma e0 in 
     let new_gamma = sub_gamma s0 gamma in 
-    let rec get_app app_gamma fn args = 
-      let fresh = fresh_tvar () in 
-      match args with 
-      | e::[] -> 
-      let arg_typ, s = check_expr app_gamma e in 
-      let s1 = unify [(sub_typ s fn, TFun(arg_typ, fresh))] in
-      sub_typ s1 fresh, s1@s
-      | e::rest ->
-      let arg_typ, s = check_expr app_gamma e in 
-      let gamma' = sub_gamma s app_gamma in 
-      let s1 = unify [(sub_typ s fn, TFun(arg_typ, fresh))] in 
-      let gamma'' = sub_gamma s1 gamma' in 
-      let typ, sub = get_app gamma'' (sub_typ (s1@s) fresh) rest in 
-
-      sub_typ (sub@s1@s) typ, sub@s1@s
+      (match elist with 
       | [] -> 
-      let s = unify [(fn, TFun(t_unit, fresh))] in 
-      (sub_typ s fresh), s
-    in
-    get_app new_gamma fn_typ elist
-    
+        let fresh = fresh_tvar () in 
+        let s = unify [(fn_typ, TFun(t_unit, fresh))] in 
+        sub_typ s fresh, s
+      | lst -> 
+        let f (prev_typ, sub) arg = 
+          let new_typ, sub' = check_expr new_gamma arg in
+          let fresh = fresh_tvar () in
+          let sub'' = unify [(sub_typ (sub'@sub) prev_typ, TFun(new_typ, fresh))] in
+          (sub_typ (sub''@sub'@sub) fresh, sub''@sub'@sub)
+        in 
+        List.fold_left f (fn_typ, s0) lst)
   | Skip -> t_unit, empty_substituition
   | SliceAccess (_, _) -> failwith "Unimplemented slice"
   | Binary (binop, e0, e1) -> 
