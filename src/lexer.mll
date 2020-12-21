@@ -20,7 +20,7 @@ let str = ['"'] ([^'"'] | ['\\'] ['"'])* ['"']
 let small_str = ['\''] ([^'"'] | ['\\'] ['\''])* ['\'']
 let nl = ['\n'] ( ( ['\t'] | [' '] )* ['\n'] )* ( ['\t'] | [' '] )*
 let bs = [' ']
-let comment = ['#'] [^'\n']* ['\n']
+let comment = ['#'] [^'\n']* (['\n'] | eof)
 
 rule token = parse
 | ws               { token lexbuf }
