@@ -280,7 +280,6 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
       | (lst, TMutable(t)) -> (lst, t), true
       | _ -> raise @@ IllTyped ("Illegal assignment to " ^ v) in
     let t0, s0 = check_expr gamma e in 
-
     let gamma' = sub_gamma s0 gamma in 
     let var_typ = init_scheme sch in 
     let var_typ = sub_typ s0 var_typ in 
@@ -289,7 +288,7 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
     let unified_type = sub_typ s1 var_typ in 
     let unified_type = if is_mut then TMutable(unified_type) else unified_type in 
 
-    (update v (typ_var_diff unified_type gamma, unified_type) gamma''), s1@s0
+    (update v (typ_var_diff unified_type gamma', unified_type) gamma''), s1@s0
   end
   | Pass -> gamma, []
   | Block (stmt_lst) -> 
