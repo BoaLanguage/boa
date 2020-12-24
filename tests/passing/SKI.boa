@@ -1,0 +1,54 @@
+# SKI with lambdas - the following three expression should be
+# and are typed as what is commented above them (or some alpha-equivalent type)
+
+# 'a -> 'a
+let I = lambda x -> x
+
+# 'a -> ('b -> 'a)
+let K = lambda x -> (lambda y -> x)
+
+# ('a -> ('b -> 'c)) -> (('a -> 'b) -> ('a -> 'c))
+let S = lambda x -> (lambda y -> (lambda z -> x(z, y(z))))
+
+# This is now typed properly, (previously it was not)
+let S_weird = lambda x -> lambda y -> lambda z -> (x(z))(y(z))
+
+# all working now
+def i(x):
+  return x
+
+def k(x, y):
+  return x
+
+def s(x, y, z):
+  let f = lambda z1 -> x(z1, y(z1))
+  return f(z)
+
+def s_weird(x, y, z):
+  let f = lambda y1 -> lambda z1 -> x(z1, y1(z1))
+  return f(y)(z)
+
+def ss(x, y, z):
+  let f = lambda x1 -> lambda y1 -> lambda z1 -> x1(z1)(y1(z1))
+  return f(x)(y)(z)
+
+# In the SKI combinator calculus, S K K = I, 
+# so all of these terms should be typed 'a -> 'a
+let I2 = S(K)(K)
+let I3 = S(K, K)
+let I4 = S_weird(K)(K)
+let I5 = S_weird(K, K)
+let I6 = s(k)(k)
+let I7 = s(k, k)
+let I8 = s_weird(k)(k)
+let I9 = s_weird(k, k)
+
+# Here are the proper types for x, y and z in the combinators above
+# x : 'a -> 'b -> 'c
+# y : 'a -> 'b
+# z : 'a
+
+# x(z, y(z)) : 'c
+# lambda z -> x(z, y(z)) : 'a -> 'c
+# lambda y -> lambda z -> x(z, y(z)) : ('a -> 'b) -> ('a -> 'c)
+# lambda x -> lambda y -> lambda z -> x(z, y(z)) : ('a -> ('b -> 'c)) -> (('a -> 'b) -> ('a -> 'c))
