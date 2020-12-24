@@ -108,6 +108,7 @@ let str_of_int_list lst : string =
 
 let str_of_scheme sch = 
   let ilist, t = sch in 
+  (* "Forall " ^ str_of_int_list ilist ^ " : " ^ *)
   (str_of_typ t)
 
 let str_of_gamma : Ast.mappings -> string = 

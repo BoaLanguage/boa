@@ -339,7 +339,7 @@ let rec check_statement (gamma : mappings) (statement: stmt) : mappings * substi
     let fn_typ = make_fn_def arg_typ_list in
     let slast = unify [(fn_typ, sub_typ s0 fn_name_type)] in 
     let new_fn_typ = sub_typ (slast@s0) fn_typ in 
-    let new_gamma = sub_gamma slast @@ update fn_id (typ_var_diff new_fn_typ gamma, new_fn_typ) gamma' in 
+    let new_gamma = sub_gamma slast @@ update fn_id (typ_var_diff new_fn_typ (sub_gamma s0 gamma), new_fn_typ) gamma' in 
     List.remove_assoc "return" new_gamma, slast@s0
     end
   | Print e -> 
@@ -355,7 +355,10 @@ after typechecking the program. *)
 let check (statement: stmt): mappings = 
   let gamma, sub = check_statement [] statement in
   let gamma' = sub_gamma sub gamma in
-  let gamma'' = List.map (fun (v, sch) -> num_tvars_used := -1;
-  let reset_typ = init_scheme sch in
-  (v, (free_type_variables reset_typ [] |> TypeVarSet.elements, reset_typ))) gamma' in
+  let gamma'' = 
+    List.map (fun (v, sch) -> 
+    num_tvars_used := -1;
+    let reset_typ = init_scheme sch in
+    (v, (free_type_variables reset_typ [] |> TypeVarSet.elements, reset_typ))) gamma' 
+  in
   gamma''
