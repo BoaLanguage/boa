@@ -96,7 +96,7 @@ let rec str_of_typ t =
       "TUPLE: " ^
       insert_delimiter_between_list " * " (fun t -> (str_of_typ t)) lst
   | TList tl ->
-    (str_of_typ tl) ^ " list"
+    (str_of_typ tl) ^ " list " 
   | TVar v -> "'" ^ (String.make 1 (Char.chr (v + 97)))
   | TDict (t1, t2) -> "Dict : " ^ (str_of_typ t1 ^ " : " ^ str_of_typ t2)
   | TLimbo t -> "LIMBO: " ^ str_of_typ t
