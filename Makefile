@@ -1,24 +1,23 @@
 BDIR := bin
 ODIR := obj
 SDIR := src
+PKGS := llvm
 
-CAMLC := ocamlc 
+CAMLF := ocamlfind ocamlc
 CAMLLEX := $(CAMLLEX) 
 CAMLYACC := ocamlyacc 
 
 MAIN := $(BDIR)/boa
 OBJS := $(ODIR)/ast.cmo $(ODIR)/lexer.cmo $(ODIR)/parser.cmo $(ODIR)/pprint.cmo $(ODIR)/eval.cmo $(ODIR)/check.cmo $(ODIR)/main.cmo
 
-
 $(ODIR)/%.cmo: $(SDIR)/%.ml
-	$(CAMLC) -I $(ODIR)/ -c $< -o $@
+	$(CAMLF) -package $(PKGS) -I $(ODIR)/ -c $< -o $@
 
 $(ODIR)/%.cmi: $(SDIR)/%.mli
-	$(CAMLC) -I $(ODIR)/ -c $< -o $@
-
+	$(CAMLF) -package $(PKGS) -I $(ODIR)/ -c $< -o $@
 
 $(MAIN): $(OBJS)
-	$(CAMLC) -o $@ $^
+	$(CAMLF) -linkpkg -package $(PKGS) -I $(ODIR)/ -o $@ $^
 
 $(SDIR)/lexer.ml: $(SDIR)/lexer.mll
 	ocamllex -q $<
