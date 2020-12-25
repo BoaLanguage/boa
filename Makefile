@@ -17,7 +17,7 @@ $(ODIR)/%.cmi: $(SDIR)/%.mli
 	$(CAMLF) -package $(PKGS) -I $(ODIR)/ -c $< -o $@
 
 $(MAIN): $(OBJS)
-	$(CAMLF) -linkpkg -package $(PKGS) -I $(ODIR)/ -o $@ $^
+	$(CAMLF) -linkpkg -package $(PKGS) -o $@ $^
 
 $(SDIR)/lexer.ml: $(SDIR)/lexer.mll
 	ocamllex -q $<
