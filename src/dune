@@ -1,0 +1,16 @@
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
+
+(ocamllex 
+    (modules lexer)
+)
+(ocamlyacc 
+    (modules parser)
+)
+(executable
+ (name main)
+ (flags (:standard -w -66))
+ (libraries llvm)
+ (public_name boa)
+ )

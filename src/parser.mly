@@ -1,22 +1,5 @@
 %{
   open Ast
-  open Printf
-  open Lexing
-  open Stack
- 
-  type bb = 
-  | End
-  | Pair of stmt * bb
-
-  let tuple_type ts =
-  match ts with
-  | [t] -> t
-  | _ -> TTuple ts
-
-  let tuple_expr es =
-  match es with
-  | [e] -> e
-  | _ -> Tuple es
 %}
 
 %token <string> VAR TNAME STRING

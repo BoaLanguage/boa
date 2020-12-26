@@ -1,7 +1,6 @@
 {
 open Parser
 open Printf
-open String
 exception Eof
 exception Err
 

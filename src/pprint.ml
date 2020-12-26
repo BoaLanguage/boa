@@ -4,7 +4,7 @@ open Ast
 let print_ident x =
   Format.printf "%s" x
 
-let print_empty p pt t e =
+let print_empty _ pt t _ =
   Format.printf "@[<2>(empty :@ " ;
   pt t;
   Format.printf ")@]"
@@ -107,7 +107,7 @@ let str_of_int_list lst : string =
   insert_delimiter_between_list ", " (fun i -> String.make 1 @@ Char.chr @@ (i) + 97) lst
 
 let str_of_scheme sch = 
-  let ilist, t = sch in 
+  let _, t = sch in 
   (* "Forall " ^ str_of_int_list ilist ^ " : " ^ *)
   (str_of_typ t)
 
@@ -135,7 +135,7 @@ let rec print_expr e =
     print_list lst;
     Format.printf ")";
   | Skip -> Format.printf "None"
-  | Lam (v, t_opt, e) -> 
+  | Lam (v, _, e) -> 
     Format.printf "lambda %s -> " v; print_expr e;
   | _ -> Format.printf "Unimplemented Expression print"
 
@@ -182,7 +182,7 @@ let rec print_stmt s =
   print_stmt s1;
   Format.printf "Else: \n";
   print_stmt s2;
-  | Def (t1, fn, args, b) -> 
+  | Def (t1, fn, _, b) -> 
   Format.printf "Function %s -> " fn;
   (match t1 with 
   | Some t -> Format.printf "%s" (str_of_typ t);
@@ -205,7 +205,7 @@ let rec print_stmt s =
   print_expr e;
   Format.printf ")\n";
   print_stmt b
-  | MutableDecl (t, v) -> 
+  | MutableDecl (_, v) -> 
   Format.printf "Mutable decl: %s" v;
   | _ -> Format.printf "DECLS"
 
@@ -226,7 +226,7 @@ let rec print_value (v : value) =
     | None -> Format.printf "None)";)
   | VString s -> Format.printf "%s" s;
   | VBool b -> Format.printf "%b" b;
-  | VClosure (v, body, env) -> Format.printf "%s" "Some closure";
+  | VClosure (_) -> Format.printf "%s" "Some closure";
   | VDict d -> 
     (match d with 
     | [] -> Format.printf "{}"
@@ -256,12 +256,12 @@ let rec print_value (v : value) =
       loop rest in 
       loop l; Format.printf "\n}\n";
   | VNone -> Format.printf "None";
-  | VPreObj (a) -> Format.printf "Preobj";
+  | VPreObj (_) -> Format.printf "Preobj";
   | VMethodCall (obj, m) -> 
       print_value obj;
       Format.printf ".";
       print_value m;
   | _ -> failwith "Not Printable"
 
-let rec print_env (s : env) =
+let print_env (s : env) =
   List.iter (fun (var, v) -> Format.printf "\n%s: " var; print_value v) s; ()

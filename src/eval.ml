@@ -1,5 +1,5 @@
 open Ast
-open Pprint
+(* open Pprint *)
 
 (* Values include *closures*, which are functions including their environments
    at "definition time." We also have "lazy" values, which let us delay the
@@ -63,7 +63,7 @@ let bool_of_value (v : value) : bool =
   match v with VBool b -> b | _ -> raise @@ TypecheckerFail "Expected boolean"
 
 let rec pow (a : int) (b : int) : int =
-  if b = 0 then 1 else if b = 1 then a else a * pow (a) (b - 1)
+  if b = 0 then 1 else if b = 1 then a else a * pow a (b - 1)
 
 let evalb (b : binop) (l : value) (r : value) : value =
   match b with
@@ -94,6 +94,7 @@ let eval_fun (f : stmt) (e : env) : value =
       e' := (v, closure) :: e;
       closure
   | _ -> raise @@ TypecheckerFail "Not a function definition"
+
 (**[evale e s] evaluates expression e with environment s*)
 let rec evale (e : exp) (s : env) : value =
   let evaluate_var v =
@@ -116,8 +117,7 @@ let rec evale (e : exp) (s : env) : value =
     let cls_ref = extract_class (lookup obj "__class__") in
     let res = lookup (obj @ cls_ref) attribute_identifier in
     match res with
-    | VClosure (_, _, _) ->
-        VMethodCall (obj_val, res) (** Bind object to self *)
+    | VClosure (_, _, _) -> VMethodCall (obj_val, res) (* Bind object to self *)
     | v -> deref_value v
   in
   let evaluate_slice_access sliceable_expression index_expression =
@@ -137,11 +137,12 @@ let rec evale (e : exp) (s : env) : value =
     in
     VTuple value_lst
   in
-  let evaluate_list expression_list = 
+  let evaluate_list expression_list =
     let value_lst =
       List.map (fun expression -> evale expression s) expression_list
     in
-    VList value_lst in
+    VList value_lst
+  in
   let evaluate_dict kv_expression_list =
     let kv_value_list =
       List.map (fun (k, v) -> (evale k s, evale v s)) kv_expression_list
@@ -161,8 +162,8 @@ let rec evale (e : exp) (s : env) : value =
   | List explist -> evaluate_list explist
   | Dict expexplist -> evaluate_dict expexplist
   | Skip -> VNone
-  | Lam (v, t, e) -> VClosure ([ v ], Return e, ref s)
-  | String s -> VString(s)
+  | Lam (v, _, e) -> VClosure ([ v ], Return e, ref s)
+  | String s -> VString s
   | _ -> raise @@ Unimplemented "Expression evaluation"
 
 and evals (conf : configuration) : env =
@@ -222,8 +223,12 @@ and evals (conf : configuration) : env =
     let b_result = evale guard sigma in
     match b_result with
     | VBool b' ->
-        if b' then (ignore (evals (sigma, statement_true, next_statement, kappa)); sigma)
-        else (ignore (evals (sigma, statement_false, next_statement, kappa)); sigma)
+        if b' then (
+          ignore (evals (sigma, statement_true, next_statement, kappa));
+          sigma )
+        else (
+          ignore (evals (sigma, statement_false, next_statement, kappa));
+          sigma )
     | _ -> raise @@ TypecheckerFail "If guard must be boolean"
   in
   let evaluate_while guard_expression body_statement =
@@ -234,7 +239,7 @@ and evals (conf : configuration) : env =
           let while_statement = While (guard_expression, body_statement) in
           let s_continue = Block [ while_statement; next_statement ] in
           let s_break = next_statement in
-          let s_return = match kappa with [] -> Pass | (_, _, s) :: t -> s in
+          let s_return = match kappa with [] -> Pass | (_, _, s) :: _ -> s in
           evals
             ( sigma,
               body_statement,
@@ -245,15 +250,15 @@ and evals (conf : configuration) : env =
   in
   let evaluate_break _ =
     match kappa with
-    | (c_b, c_c, _) :: kappa_t -> evals (sigma, c_b, Pass, kappa_t)
+    | (c_b, _, _) :: kappa_t -> evals (sigma, c_b, Pass, kappa_t)
     | _ -> raise IllegalBreak
   in
   let evaluate_continue _ =
     match kappa with
-    | (c_b, c_c, _) :: kappa_t -> evals (sigma, c_c, Pass, kappa_t)
+    | (_, c_c, _) :: kappa_t -> evals (sigma, c_c, Pass, kappa_t)
     | _ -> raise IllegalContinue
   in
-  let evaluate_class class_identifier superclass statement =
+  let evaluate_class class_identifier _ statement =
     let new_sigma =
       ("__mattrs__", VList []) :: ("__attrs__", VList []) :: sigma
     in
@@ -270,24 +275,24 @@ and evals (conf : configuration) : env =
   | Pass, Pass -> sigma
   | Pass, c -> evals (sigma, c, Pass, kappa)
   | Assign (v, a), _ -> evaluate_assignment v a
-  | AttrAssgn (objexp, attr, e), c ->
+  | AttrAssgn (objexp, attr, e), _ ->
       evaluate_attribute_assignment objexp attr e
   | Decl (_, _), c -> evals (sigma, Pass, c, kappa)
   | MutableDecl (_, v), c ->
       evals ((v, VRef (ref None)) :: sigma, c, Pass, kappa)
-  | MemDecl (_, v), c -> evaluate_member_declaration v
-  | MutableMemDecl (_, v), c -> evaluate_mutable_member_declaration v
+  | MemDecl (_, v), _ -> evaluate_member_declaration v
+  | MutableMemDecl (_, v), _ -> evaluate_mutable_member_declaration v
   | Block (c1 :: t), Pass -> evals (sigma, c1, Block t, kappa)
   | Block (c1 :: t), c3 -> evals (sigma, c1, Block (t @ [ c3 ]), kappa)
   | Block [], c3 -> evals (sigma, Pass, c3, kappa)
-  | If (b, c1, c2), c3 -> evaluate_if b c1 c2
-  | While (b, c1), c2 -> evaluate_while b c1
+  | If (b, c1, c2), _ -> evaluate_if b c1 c2
+  | While (b, c1), _ -> evaluate_while b c1
   | Print a, c ->
       Pprint.print_value @@ evale a sigma;
       Format.printf "%s" "\n";
       evals (sigma, Pass, c, kappa)
-  | Break, c -> evaluate_break ()
-  | Continue, c -> evaluate_continue ()
+  | Break, _ -> evaluate_break ()
+  | Continue, _ -> evaluate_continue ()
   | Return e, _ -> evaluate_assignment "return" e
   | Def (rt, name, args, body), c ->
       evals
@@ -295,9 +300,12 @@ and evals (conf : configuration) : env =
           Pass,
           c,
           kappa )
-  | Class (name, super, stmt), c -> evaluate_class name super stmt
-  | Exp (e), c -> let _  = evale e sigma in evals (sigma, Pass, c, kappa)
+  | Class (name, super, stmt), _ -> evaluate_class name super stmt
+  | Exp e, c ->
+      let _ = evale e sigma in
+      evals (sigma, Pass, c, kappa)
   | _ -> raise @@ Unimplemented "Statement"
+
 (**[call callable args] evaluates the application of a closure-like object *)
 and call (callable : value) (args : value list) : value =
   let zip = List.map2 (fun x y -> (x, y)) in
@@ -311,21 +319,26 @@ and call (callable : value) (args : value list) : value =
     | v -> v
   in
   let call_closure params body env_ref =
-    if (List.length args < List.length params) then 
-    let rec take_tail n lst = if n = 0 then lst 
-    else match lst with 
-    |[] -> failwith "error" 
-    |h::t -> take_tail (n - 1) t in
-    
-    let unbound_params = take_tail (List.length args) params in 
-    let bound_params = take (List.length args) params in  
-    let new_env = ref ((zip bound_params args) @ !env_ref) in
-    VClosure(unbound_params, body, new_env)
-    else 
-    let callenv =
-      match args with [] -> !env_ref | _ -> ("return", VRef(ref None)) :: zip params args @ !env_ref
-    in
-    deref_value @@ lookup (evals (callenv, body, Pass, [])) "return"
+    if List.length args < List.length params then
+      let rec take_tail n lst =
+        if n = 0 then lst
+        else
+          match lst with
+          | [] -> failwith "error"
+          | h :: t -> take_tail (n - 1) t
+      in
+
+      let unbound_params = take_tail (List.length args) params in
+      let bound_params = take (List.length args) params in
+      let new_env = ref (zip bound_params args @ !env_ref) in
+      VClosure (unbound_params, body, new_env)
+    else
+      let callenv =
+        match args with
+        | [] -> !env_ref
+        | _ -> (("return", VRef (ref None)) :: zip params args) @ !env_ref
+      in
+      deref_value @@ lookup (evals (callenv, body, Pass, [])) "return"
   in
   let call_reference r =
     match !r with

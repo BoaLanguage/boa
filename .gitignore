@@ -5,3 +5,4 @@ src/parser.output
 src/lexer.ml
 src/*.mli
 bin/boa
+_build/
