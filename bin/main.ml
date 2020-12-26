@@ -1,5 +1,5 @@
-open Ast
-open Parser
+open Boa
+open Boa.Parser
 
 (* Command-line arguments. *)
 let filename = ref ""
@@ -10,68 +10,6 @@ exception IllegalIndentationError
 let options = [
   "-nocheck", Arg.Unit (fun _ -> nocheck := true), "Disable type checker"
 ]
-
-let str_of_token token = 
-  match token with
-    | VAR (s) -> "VAR("^s^")"
-    | TNAME (s) -> "TNAME("^s^")"
-    | INT (i) -> "INT("^string_of_int i^")"
-    | BOOL (b) -> "BOOL("^string_of_bool b^")"
-    | LPAREN -> "LPAREN"
-    | RPAREN -> "RPAREN"
-    | LBRACK -> "LBRACK"
-    | RBRACK -> "RBRACK"
-    | DOT -> "DOT"
-    | COLON -> "COLON"
-    | COMMA -> "COMME"
-    | ARROW -> "ARROW"
-    | LAMBDA -> "LAMBDA"
-    | EQUALS -> "EQUALS"
-    | EQUALSEQUALS -> "EQUALSEQUALS"
-    | DEF -> "DEF"
-    | IS -> "IS"
-    | IN -> "IN"
-    | PLUS -> "PLUS"
-    | MINUS -> "MINUS"
-    | EOF -> "END OF FILE"
-    | LESS -> "LESS"
-    | GREATER -> "GREATER"
-    | LEQ -> "LEQ"
-    | GEQ -> "GEQ"
-    | NEQ -> "NEQ"
-    | MOD -> "MOD"
-    | INTDIV -> "INTDIV"
-    | DIV -> "DIV"
-    | RETURN -> "RETURN"
-    | INDENT -> "INDENT"
-    | STAR -> "STAR"
-    | STARSTAR -> "STARSTAR"
-    | IF -> "IF"
-    | ELSE -> "ELSE"
-    | ELIF -> "ELIF"
-    | AND -> "AND"
-    | OR -> "OR"
-    | NOT -> "NOT"
-    | SEMICOLON -> "SEMICOLON"
-    | NEWLINE (i) -> "NEWLINE("^string_of_int i^")"
-    | PRINT ->  "PRINT"
-    | FOR -> "FOR"
-    | CLASS -> "CLASS"
-    | LIST -> "LIST"
-    | WHILE -> "WHILE"
-    | MEMBER -> "MEMBER"
-    | DEDENT  -> "DEDENT"
-    | LET -> "LET"
-    | VARKEYWORD -> "VARKEYWORD"
-    | STRING s -> "STRING("^ s ^ ")"
-    | NOP -> "NOP"
-    | EOL -> "EOL"
-    | _ -> "Pimpy"
-
-let rec print_lexbuf l =
-  match l with
-  | l when l.Lexing.lex_eof_reached -> ignore (Lexer.token l);
-  | l -> (Lexer.token l |> str_of_token |> Format.printf "%s "); print_lexbuf l
 
 let indent_level = ref 0
 let dedent_stack : int list ref = ref [0]
@@ -113,11 +51,6 @@ let rec token_wrapper lexbuf =
         temp_tokens := dedent_list;
         EOL
   | _ -> token
-
-let rec print_tokens token_fun lexbuf = 
-  let token = token_fun lexbuf in 
-  print_endline @@ str_of_token token;
-  if token = EOF then () else print_tokens token_fun lexbuf
 
 let () =
   (* (1) Parse the command-line arguments. *)

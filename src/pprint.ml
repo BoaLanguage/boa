@@ -1,6 +1,5 @@
 open Ast
 (* Pretty printing helper functions *)
-
 let print_ident x =
   Format.printf "%s" x
 
