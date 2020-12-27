@@ -1,8 +1,9 @@
 (ocamllex 
     (modules lexer)
 )
-(ocamlyacc 
+(menhir 
     (modules parser)
+    (flags --explain)
 )
 (library
  (name boa)

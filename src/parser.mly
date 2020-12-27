@@ -2,15 +2,14 @@
   open Ast
 %}
 
-%token <string> VAR TNAME STRING
-%token <int> NEWLINE
+%token <string> VAR STRING
 %token <int> INT
 %token <bool> BOOL
 %token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA FOR LBRACE RBRACE
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
 %token EOF LESS GREATER LEQ GEQ NEQ CLASS WHILE MEMBER LIST
-%token COMMA MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
-%token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON PRINT NOP EOL
+%token MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
+%token STAR STARSTAR IF ELSE ELIF AND OR NOT PRINT EOL
 
 %type <Ast.stmt> prog
 
@@ -19,26 +18,12 @@
 %%
 prog: 
     | stmtlist EOF                     { Block($1) }
-    /* | stmt 
-      ind_tuple EOF                     { block_structure (($1, 0)::$2) 0 } */
 
 iblock:
     | INDENT block DEDENT               { $2 }
 
 block:
     | stmtlist                          { Block($1) }
-
-nll:
-    | EOL                           { [] }   
-    | nll EOL                       { [] }                         
-
-/* indented_block:
-    | indented_stmtlist                 { Block($1) }
-
-indented_stmtlist:
-    | INDENT stmt                       { [$2] }
-    | indented_stmtlist 
-      EOL INDENT stmt               { $1@[$4] } */
 
 stmtlist: 
     | stmt_newline                      { [$1] }
@@ -51,7 +36,6 @@ stmt_newline:
 
 simple_stmt:
    |  expr                              { Exp($1) }
-   /* |  thint                             { Decl(fst $1, snd $1) } */
    |  expr DOT VAR EQUALS expr          { AttrAssgn($1, $3, $5) }
    |  LET thint EQUALS expr             { Block([
                                         Decl(Some (fst $2), snd $2);
@@ -100,10 +84,6 @@ iff:
       iblock EOL
       ELSE COLON EOL
       iblock                    { If ($2, $5, $10) }
-/* 
-elifchain:
-    | ELIF expr EOL block           { If($2, $4, Exp(Skip)) }
-    | elifchain ELIF expr EOL block { If() } */
 
 expr:
     | LPAREN expr RPAREN                { $2 }
@@ -118,7 +98,6 @@ expr:
     | BOOL                              { Bool($1) }
     | LAMBDA thint ARROW expr           { Lam(snd $2, Some(fst $2), $4) }
     | LAMBDA VAR ARROW expr             { Lam($2, None, $4) }
-    | tuple                             { $1 }
     | lst                               { $1 }
     | dict                              { $1 }
     | bexp                              { $1 }
@@ -158,13 +137,15 @@ thintopt:
 typ:
     | VAR                               { TBase($1) }
     | typ ARROW typ                     { TFun($1, $3) }
-    | typlist                           { TTuple($1) }
+    | typ STAR typ                      { 
+                                          match $1, $3 with 
+                                          | TTuple l1, TTuple l2 -> TTuple(l1 @ l2)
+                                          | TTuple l1, t2 -> TTuple(l1@[t2])
+                                          | t1, TTuple(l2) -> TTuple(t1::l2)
+                                          | t1, t2 -> TTuple([t1; t2])
+                                        }
     | typ LIST                          { TList($1) }
     | LPAREN typ RPAREN                 { $2 }
-
-typlist:
-    | typ                               { [$1] }
-    | typlist STAR typ                  { $1@[$3] }
 
 arglist:
     | LPAREN RPAREN                     { [] }
@@ -198,4 +179,3 @@ exprlist:
 tuple:
     | LPAREN exprlist RPAREN            { Tuple($2) }
     | LPAREN exprlist COMMA RPAREN      { Tuple($2) }
-    /* | LPAREN expr COMMA RPAREN          { Tuple([$2]) } */
