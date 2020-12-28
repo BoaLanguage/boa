@@ -388,8 +388,8 @@ let rec check_statement (gamma : mappings) (statement : stmt) :
       if tvar_list = [] then sub_typ s0 typ else raise @@ IllTyped "Quantifiers"
     in
     let arg_types = List.map mapper' arg_typs in
-    let arg_typ_list = List.tl arg_types in
-    let return_type = List.hd arg_types in
+    let arg_typ_list = substitute s0 (List.tl arg_types) in
+    let return_type = sub_typ s0 (List.hd arg_types) in
     let return_type =
       match return_type with
       | TMutable t -> t
