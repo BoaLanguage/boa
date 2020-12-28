@@ -206,7 +206,7 @@ let rec unify (constraints : constraints) : substitution =
         | TDict (t1, t2), TDict (t1', t2') ->
           unify @@ ((t1, t1') :: (t2, t2') :: rest)
         | _ ->
-          (* constraints |> str_of_constr |> Format.printf "Constraints: %s \n"; *)
+          constraints |> str_of_constr |> Format.printf "Constraints: %s \n";
           raise
           @@ IllTyped "Typing of program led to above impossible constraints"
     )
