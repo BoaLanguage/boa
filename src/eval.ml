@@ -50,11 +50,11 @@ let rec lookup_unwrap_optional s x : value =
   match s with
   | [] -> raise (UnboundVariable x)
   | (y, u) :: t ->
-      if x = y then
-        match u with
-        | Some v -> v
-        | _ -> raise @@ TypecheckerFail ("Uninitialized variable: " ^ x)
-      else lookup_unwrap_optional t x
+    if x = y then
+      match u with
+      | Some v -> v
+      | _ -> raise @@ TypecheckerFail ("Uninitialized variable: " ^ x)
+    else lookup_unwrap_optional t x
 
 let int_of_value (v : value) : int =
   match v with VInt i -> i | _ -> raise @@ TypecheckerFail "Expected integer"
@@ -88,11 +88,11 @@ let evalb (b : binop) (l : value) (r : value) : value =
 let eval_fun (f : stmt) (e : env) : value =
   match f with
   | Def (_, v, arg_type_lst, statement) ->
-      let args = List.map snd arg_type_lst in
-      let e' = ref e in
-      let closure = VClosure (args, statement, e') in
-      e' := (v, closure) :: e;
-      closure
+    let args = List.map snd arg_type_lst in
+    let e' = ref e in
+    let closure = VClosure (args, statement, e') in
+    e' := (v, closure) :: e;
+    closure
   | _ -> raise @@ TypecheckerFail "Not a function definition"
 
 (**[evale e s] evaluates expression e with environment s*)
@@ -173,8 +173,8 @@ and evals (conf : configuration) : env =
     let new_sigma =
       match List.assoc_opt identifier sigma with
       | Some (VRef r) ->
-          r := Some new_value;
-          sigma
+        r := Some new_value;
+        sigma
       | _ -> (identifier, new_value) :: sigma
     in
     evals (new_sigma, next_statement, Pass, kappa)
@@ -187,14 +187,14 @@ and evals (conf : configuration) : env =
     | VPreObj old_obj -> (
         match List.assoc_opt attribute_identifier old_obj with
         | Some result ->
-            result := new_value;
-            evals (sigma, next_statement, Pass, kappa)
+          result := new_value;
+          evals (sigma, next_statement, Pass, kappa)
         | _ -> raise @@ TypecheckerFail "Unbound Attribute" )
     | VObj obj -> (
         match List.assoc_opt attribute_identifier obj with
         | Some (VRef value) ->
-            value := Some new_value;
-            evals (sigma, next_statement, Pass, kappa)
+          value := Some new_value;
+          evals (sigma, next_statement, Pass, kappa)
         | Some _ -> raise @@ TypecheckerFail "Immutable Attribute"
         | _ -> raise @@ TypecheckerFail "Unbound Attribute" )
     | _ -> raise @@ TypecheckerFail "Not an object"
@@ -203,49 +203,49 @@ and evals (conf : configuration) : env =
     let attrs = lookup sigma "__attrs__" in
     match attrs with
     | VList lst ->
-        let new_sigma =
-          update sigma "__attrs__" (VList (VString identifier :: lst))
-        in
-        evals (new_sigma, Pass, next_statement, kappa)
+      let new_sigma =
+        update sigma "__attrs__" (VList (VString identifier :: lst))
+      in
+      evals (new_sigma, Pass, next_statement, kappa)
     | _ -> raise @@ TypecheckerFail "__attrs__ is not a list"
   in
   let evaluate_mutable_member_declaration identifier =
     let mattrs = lookup sigma "__mattrs__" in
     match mattrs with
     | VList lst ->
-        let new_sigma =
-          update sigma "__mattrs__" (VList (VString identifier :: lst))
-        in
-        evals (new_sigma, Pass, next_statement, kappa)
+      let new_sigma =
+        update sigma "__mattrs__" (VList (VString identifier :: lst))
+      in
+      evals (new_sigma, Pass, next_statement, kappa)
     | _ -> raise @@ TypecheckerFail "__mattrs__ is not a list"
   in
   let evaluate_if guard statement_true statement_false =
     let b_result = evale guard sigma in
     match b_result with
     | VBool b' ->
-        if b' then (
-          ignore (evals (sigma, statement_true, next_statement, kappa));
-          sigma )
-        else (
-          ignore (evals (sigma, statement_false, next_statement, kappa));
-          sigma )
+      if b' then (
+        ignore (evals (sigma, statement_true, next_statement, kappa));
+        sigma )
+      else (
+        ignore (evals (sigma, statement_false, next_statement, kappa));
+        sigma )
     | _ -> raise @@ TypecheckerFail "If guard must be boolean"
   in
   let evaluate_while guard_expression body_statement =
     let guard = evale guard_expression sigma in
     match guard with
     | VBool b' ->
-        if b' then
-          let while_statement = While (guard_expression, body_statement) in
-          let s_continue = Block [ while_statement; next_statement ] in
-          let s_break = next_statement in
-          let s_return = match kappa with [] -> Pass | (_, _, s) :: _ -> s in
-          evals
-            ( sigma,
-              body_statement,
-              Block [ while_statement; next_statement ],
-              (s_break, s_continue, s_return) :: kappa )
-        else evals (sigma, Pass, next_statement, kappa)
+      if b' then
+        let while_statement = While (guard_expression, body_statement) in
+        let s_continue = Block [ while_statement; next_statement ] in
+        let s_break = next_statement in
+        let s_return = match kappa with [] -> Pass | (_, _, s) :: _ -> s in
+        evals
+          ( sigma,
+            body_statement,
+            Block [ while_statement; next_statement ],
+            (s_break, s_continue, s_return) :: kappa )
+      else evals (sigma, Pass, next_statement, kappa)
     | _ -> raise @@ TypecheckerFail "While guard must be a boolean"
   in
   let evaluate_break _ =
@@ -276,10 +276,10 @@ and evals (conf : configuration) : env =
   | Pass, c -> evals (sigma, c, Pass, kappa)
   | Assign (v, a), _ -> evaluate_assignment v a
   | AttrAssgn (objexp, attr, e), _ ->
-      evaluate_attribute_assignment objexp attr e
+    evaluate_attribute_assignment objexp attr e
   | Decl (_, _), c -> evals (sigma, Pass, c, kappa)
   | MutableDecl (_, v), c ->
-      evals ((v, VRef (ref None)) :: sigma, c, Pass, kappa)
+    evals ((v, VRef (ref None)) :: sigma, c, Pass, kappa)
   | MemDecl (_, v), _ -> evaluate_member_declaration v
   | MutableMemDecl (_, v), _ -> evaluate_mutable_member_declaration v
   | Block (c1 :: t), Pass -> evals (sigma, c1, Block t, kappa)
@@ -288,22 +288,22 @@ and evals (conf : configuration) : env =
   | If (b, c1, c2), _ -> evaluate_if b c1 c2
   | While (b, c1), _ -> evaluate_while b c1
   | Print a, c ->
-      Pprint.print_value @@ evale a sigma;
-      Format.printf "%s" "\n";
-      evals (sigma, Pass, c, kappa)
+    Pprint.print_value @@ evale a sigma;
+    Format.printf "%s" "\n";
+    evals (sigma, Pass, c, kappa)
   | Break, _ -> evaluate_break ()
   | Continue, _ -> evaluate_continue ()
   | Return e, _ -> evaluate_assignment "return" e
   | Def (rt, name, args, body), c ->
-      evals
-        ( (name, eval_fun (Def (rt, name, args, body)) sigma) :: sigma,
-          Pass,
-          c,
-          kappa )
+    evals
+      ( (name, eval_fun (Def (rt, name, args, body)) sigma) :: sigma,
+        Pass,
+        c,
+        kappa )
   | Class (name, super, stmt), _ -> evaluate_class name super stmt
   | Exp e, c ->
-      let _ = evale e sigma in
-      evals (sigma, Pass, c, kappa)
+    let _ = evale e sigma in
+    evals (sigma, Pass, c, kappa)
   | _ -> raise @@ Unimplemented "Statement"
 
 (**[call callable args] evaluates the application of a closure-like object *)
@@ -315,7 +315,7 @@ and call (callable : value) (args : value list) : value =
         match !r with
         | Some v -> v
         | _ ->
-            raise @@ TypecheckerFail "Method returned uninitialized reference" )
+          raise @@ TypecheckerFail "Method returned uninitialized reference" )
     | v -> v
   in
   let call_closure params body env_ref =
@@ -325,7 +325,7 @@ and call (callable : value) (args : value list) : value =
         else
           match lst with
           | [] -> failwith "error"
-          | h :: t -> take_tail (n - 1) t
+          | _ :: t -> take_tail (n - 1) t
       in
 
       let unbound_params = take_tail (List.length args) params in
@@ -342,24 +342,24 @@ and call (callable : value) (args : value list) : value =
   in
   let call_reference r =
     match !r with
-    | Some (VObj cls_obj as v) -> call v args
+    | Some (VObj _ as v) -> call v args
     | _ -> raise @@ TypecheckerFail "Callable is uninitialized"
   in
   let call_init class_object =
     match lookup class_object "__init__" with
-    | VClosure (params, body, env) as init -> (
+    | VClosure _ as init -> (
         let attrs = lookup class_object "__attrs__" in
         let mattrs = lookup class_object "__mattrs__" in
         let extract_string_list vlist =
           match vlist with
           | VList val_list ->
-              let extract_string vstring =
-                match vstring with
-                | VString s -> s
-                | _ ->
-                    raise @@ TypecheckerFail "Atrribute names must be strings"
-              in
-              List.map extract_string val_list
+            let extract_string vstring =
+              match vstring with
+              | VString s -> s
+              | _ ->
+                raise @@ TypecheckerFail "Atrribute names must be strings"
+            in
+            List.map extract_string val_list
           | _ -> raise @@ TypecheckerFail "Attributes must be a list"
         in
         let attrs', mattrs' =
@@ -376,22 +376,22 @@ and call (callable : value) (args : value list) : value =
         let new_args = VRef (ref (Some instance)) :: args in
         match call init new_args with
         | VPreObj attrsmattrs ->
-            let attrs =
-              List.filter (fun (name, vref) -> List.mem name attrs') attrsmattrs
-            in
-            let attrs = List.map (fun (name, vref) -> (name, !vref)) attrs in
-            let mattrs =
-              List.filter
-                (fun (name, vref) -> List.mem name mattrs')
-                attrsmattrs
-            in
-            let mattrs =
-              List.map
-                (fun (name, vref) -> (name, VRef (ref (Some !vref))))
-                mattrs
-            in
-            VObj
-              ( [ ("__class__", VRef (ref (Some (VObj class_object)))) ]
+          let attrs =
+            List.filter (fun (name, _) -> List.mem name attrs') attrsmattrs
+          in
+          let attrs = List.map (fun (name, vref) -> (name, !vref)) attrs in
+          let mattrs =
+            List.filter
+              (fun (name, _) -> List.mem name mattrs')
+              attrsmattrs
+          in
+          let mattrs =
+            List.map
+              (fun (name, vref) -> (name, VRef (ref (Some !vref))))
+              mattrs
+          in
+          VObj
+            ( [ ("__class__", VRef (ref (Some (VObj class_object)))) ]
               @ attrs @ mattrs )
         | _ -> raise @@ TypecheckerFail "__init__ did not return pre-object" )
     | _ -> raise @@ TypecheckerFail "__init__ must evaluate to a closure"
