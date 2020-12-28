@@ -1,3 +1,4 @@
+*/.merlin
 obj/*.cmi
 obj/*.cmo
 src/parser.ml
