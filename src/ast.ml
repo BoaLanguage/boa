@@ -1,7 +1,6 @@
 type var = string
 type tvar = int
 
-
 type typ =
   | TFun of typ * typ
   | TBase of string
@@ -14,7 +13,12 @@ type typ =
   | TObj of {attrs: (var * typ) list; mattrs: (var * typ) list}
 
 type scheme = tvar list * typ
-type mappings = (var * scheme) list
+
+module Mappings = Map.Make(String)
+module Substitution = Map.Make(Int)
+
+type mappings = (scheme list) Mappings.t
+type substitution = typ Substitution.t
 
 type binop =
   | Plus
@@ -76,7 +80,7 @@ type stmt =
   | Break
   | Continue
   | Pass
- 
+
 
 type value = 
   | VInt of int

@@ -1,13 +1,9 @@
 open Ast
 open Pprint
 
-type error_info = string
-
-exception IllTyped of error_info
+exception IllTyped of string
 
 type constraints = (typ * typ) list
-
-type substitution = (int * typ) list
 
 (** A counter for the type variables used in type inference *)
 let num_tvars_used = ref (-1)
@@ -32,13 +28,25 @@ let t_unit = TTuple []
 (** Useful constants for type-inference constructs *)
 let no_constraints = []
 
-let empty_substituition = []
+let empty_substitution = Substitution.empty
 
-let empty_gamma = []
+let empty_gamma = Mappings.empty
 
-(** [update k v lst] is the association list lst, but with v replaced as the 
-    second entry in the tuple containing k as key. *)
-let update k v lst = (k, v) :: List.remove_assoc k lst
+(** [update name scheme gamma] is the set of mappings [gamma], with 
+    the most-shadowed binding for [name] replaced with [scheme]. If 
+    [name] is not bound in [gamma], the binding [name] -> [scheme] 
+    is added to [gamma] *)
+let update (name : var) (scheme : scheme) (gamma : mappings) = 
+  match Mappings.find_opt name gamma with 
+  | Some (_::rest) -> Mappings.add name (scheme::rest) gamma
+  | _ -> Mappings.add name [scheme] gamma
+
+(** [shadow name scheme gamma] is the set of mappings [gamma], with
+    a new shadowed mapping [name] -> [gamma] *)
+let shadow (name : var) (scheme : scheme) (gamma : mappings) = 
+  match Mappings.find_opt name gamma with 
+  | None -> Mappings.add name [scheme] gamma
+  | Some lst -> Mappings.add name (scheme::lst) gamma
 
 (** [assoc_opt_or_raise k lst] is the value corresponding to k in lst,
     unless k is not bound, in which case an error is raised *)
@@ -59,7 +67,10 @@ let map_tuple (f : 'a list -> 'b list) l =
   let l1, l2 = unzip l in
   zp (f l1) (f l2)
 
-let lookup_typ : var -> mappings -> scheme option = List.assoc_opt
+let lookup_typ (name : var) (gamma : mappings) : scheme option = 
+  match Mappings.find_opt name gamma with
+  | Some (h::_) -> Some h
+  | _ -> None
 
 let any (f : 'a -> bool) : 'a list -> bool =
   List.fold_left (fun acc b -> acc || f b) false
@@ -68,34 +79,31 @@ let any (f : 'a -> bool) : 'a list -> bool =
 let ( |?? ) (opt : 'a option) (default : 'a) : 'a =
   match opt with Some t -> t | None -> default
 
+(** [sub_typ s t] is t, with all occurrences of type variables in the 
+    domain of s replaced with the appropriate mapping *)
+let rec sub_typ (sigma : substitution) (typ : typ) : typ =
+  let sub = sub_typ sigma in
+  match typ with
+  | TVar i -> Substitution.find_opt i sigma |?? typ
+  | TBase _ as typ -> typ
+  | TFun (t1, t2) -> TFun (sub t1, sub t2)
+  | TList t -> TList (sub t)
+  | TTuple lst -> TTuple (List.map sub lst)
+  | TDict (t1, t2) -> TDict (sub t1, sub t2)
+  | TLimbo t -> TLimbo (sub t)
+  | TMutable t -> TMutable (sub t)
+  | _ -> failwith "Unimplemented (substitute)"
+
 (** [substitute sigma lst] substitutes type variables in sigma into types in lst*)
 let substitute (sigma : substitution) (lst : typ list) : typ list =
-  let rec sub (n : int) (new_typ : typ) (old_typ : typ) : typ =
-    match old_typ with
-    | TVar i when i = n -> new_typ
-    | TVar _ -> old_typ
-    | TBase _ as typ -> typ
-    | TFun (t1, t2) -> TFun (sub n new_typ t1, sub n new_typ t2)
-    | TList t -> TList (sub n new_typ t)
-    | TTuple lst -> TTuple (List.map (sub n new_typ) lst)
-    | TDict (t1, t2) -> TDict (sub n new_typ t1, sub n new_typ t2)
-    | TLimbo t -> TLimbo (sub n new_typ t)
-    | TMutable t -> TMutable (sub n new_typ t)
-    | _ -> failwith "Unimplemented (substitute)"
-  in
-  let f (tvar, typ) (acc : typ list) = List.map (sub tvar typ) acc in
-  List.fold_right f sigma lst
+  List.map (sub_typ sigma) lst
 
 (** [sub_gamma s gamma] is gamma, with all occurrences of type variables
     that have type assignments in s, replaced with those type assignments. *)
-let sub_gamma (s : substitution) (gamma : mappings) : mappings =
-  let vars, schemes = unzip gamma in
-  let foralls, types = unzip schemes in
-  zp vars (zp foralls @@ substitute s types)
-
-(** [sub_typ s t] is t, with all occurrences of type variables in the 
-    domain of s replaced with the appropriate mapping *)
-let sub_typ (s : substitution) (t : typ) : typ = List.hd @@ substitute s [ t ]
+let sub_gamma (sigma : substitution) (gamma : mappings) : mappings =
+  let sub_scheme schm : scheme = fst schm, sub_typ sigma (snd schm) in 
+  let sub_scheme_list = List.map sub_scheme in 
+  Mappings.map sub_scheme_list gamma
 
 (** [i ==> typ] checks if type variable i is in typ*)
 let rec ( ==> ) (i : tvar) (typ : typ) : bool =
@@ -139,19 +147,26 @@ let rec free_type_variables (t : typ) (bound : tvar list) : TypeVarSet.t =
     in any of the type assignments in gamma. *)
 let typ_var_diff (t1 : typ) (gamma : mappings) : int list =
   let t1_ftv = free_type_variables t1 [] in
+  let schm_ftv schm = free_type_variables (snd schm) (fst schm) in
+  let schm_lst_ftv = List.fold_left (fun acc schm -> TypeVarSet.union acc (schm_ftv schm)) TypeVarSet.empty in
   let gamma_ftv =
-    List.fold_left
-      (fun acc (_, (lst, t)) ->
-         TypeVarSet.union (free_type_variables t lst) acc)
-      TypeVarSet.empty gamma
+    Mappings.fold (fun _ lst acc -> TypeVarSet.union (schm_lst_ftv lst) acc) gamma TypeVarSet.empty
   in
   TypeVarSet.elements (TypeVarSet.diff t1_ftv gamma_ftv)
+
+let compose (s1 : substitution) (s2 : substitution) : substitution =
+  let f (_ : tvar) (second_binding : typ option) (first_binding : typ option) : typ option = 
+    match second_binding, first_binding with 
+    | _, Some b -> Some (sub_typ s1 b)
+    | Some b, None -> Some b
+    | None, None -> None in 
+  Substitution.merge f s1 s2
 
 (** [unify constraints] is a substitution generated after running unification
     on the set of constraints provided. *)
 let rec unify (constraints : constraints) : substitution =
   match constraints with
-  | [] -> []
+  | [] -> empty_substitution
   | (t, t') :: rest -> (
       if t = t' then unify rest
       else
@@ -162,18 +177,18 @@ let rec unify (constraints : constraints) : substitution =
         | TMutable t, other -> unify @@ ((t, other) :: rest)
         | other, TMutable t -> unify @@ ((other, t) :: rest)
         | TVar i, _ when not (i ==> t') ->
-          let sigma' = [ (i, t') ] in
-          sigma' @ unify @@ sub_constraints sigma'
+          let sigma' = Substitution.singleton i t' in
+          compose sigma' @@ unify @@ sub_constraints sigma'
         | _, TVar i when not (i ==> t) ->
-          let sigma' = [ (i, t) ] in
-          sigma' @ unify @@ sub_constraints sigma'
+          let sigma' = Substitution.singleton i t in
+          compose sigma' @@ unify @@ sub_constraints sigma'
         | TFun (t1, t2), TFun (t1', t2') ->
           unify @@ ((t1, t1') :: (t2, t2') :: rest)
         | TList t, TList t' -> unify @@ ((t, t') :: rest)
         | TDict (t1, t2), TDict (t1', t2') ->
           unify @@ ((t1, t1') :: (t2, t2') :: rest)
         | _ ->
-          constraints |> str_of_constr |> Format.printf "Constraints: %s \n";
+          (* constraints |> str_of_constr |> Format.printf "Constraints: %s \n"; *)
           raise
           @@ IllTyped "Typing of program led to above impossible constraints"
     )
@@ -200,17 +215,17 @@ let rec init_scheme (scheme : scheme) : typ =
     inferred type and type substitution, after checking [e]. *)
 let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
   match e with
-  | Int _ -> (t_int, [])
-  | Bool _ -> (t_bool, [])
-  | String _ -> (t_string, [])
+  | Int _ -> t_int, empty_substitution
+  | Bool _ -> t_bool, empty_substitution
+  | String _ -> t_string, empty_substitution
   | Var v -> (
       match lookup_typ v gamma with
       | None -> raise @@ IllTyped ("Unbound variable " ^ v)
       | Some (_, TLimbo _) -> raise @@ IllTyped ("Uninitialized variable " ^ v)
-      | Some scheme -> (init_scheme scheme, []) )
+      | Some scheme -> init_scheme scheme, empty_substitution )
   | Lam (v, t_opt, exp) ->
     let arg_typ = match t_opt with None -> fresh_tvar () | Some t -> t in
-    let expr_typ, new_sub = check_expr ((v, ([], arg_typ)) :: gamma) exp in
+    let expr_typ, new_sub = check_expr (shadow v ([], arg_typ) gamma) exp in
     (TFun (sub_typ new_sub arg_typ, expr_typ), new_sub)
   | Call (e0, elist) -> (
       let fn_typ, s0 = check_expr gamma e0 in
@@ -230,7 +245,7 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
           (sub_typ (sub'' @ sub' @ sub) fresh, sub'' @ sub' @ sub)
         in
         List.fold_left f (fn_typ, s0) lst )
-  | Skip -> (t_unit, empty_substituition)
+  | Skip -> (t_unit, empty_substitution)
   | SliceAccess (_, _) -> failwith "Unimplemented slice"
   | Binary (binop, e0, e1) -> (
       let t0, s0 = check_expr gamma e0 in
