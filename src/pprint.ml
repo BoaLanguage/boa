@@ -107,7 +107,7 @@ let str_of_int_list lst : string =
 
 let str_of_scheme sch = 
   let lst, t = sch in 
-  "Forall " ^ str_of_int_list lst ^ " : " ^
+  (* "Forall " ^ str_of_int_list lst ^ " : " ^ *)
   (str_of_typ t)
 
 let str_of_gamma (gamma : Ast.mappings) : string = 
@@ -119,9 +119,10 @@ let str_of_constr =
   List.fold_left 
     (fun acc (t1, t2) -> acc ^ ", " ^ (str_of_typ t1) ^ " == " ^ (str_of_typ t2)) ""
 
-let str_of_sub = 
-  List.fold_left 
-    (fun acc (t1, t2) -> acc ^ ", " ^ ((String.make 1 (Char.chr (t1 + 97)))) ^ " => " ^ (str_of_typ t2)) ""
+let str_of_sub s = 
+  Ast.Substitution.fold 
+    (fun key typ acc -> acc ^ ", " ^ (str_of_typ (TVar key)) ^ " -~-> " ^ (str_of_typ typ)) s ""
+(* (fun _ (t1, t2) acc  -> acc ^ ", " ^ ((String.make 1 (Char.chr (t1 + 97)))) ^ " => " ^ (str_of_typ t2)) "" *)
 
 let rec print_expr e = 
   match e with 

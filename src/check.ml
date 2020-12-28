@@ -45,8 +45,8 @@ let update (name : var) (scheme : scheme) (gamma : mappings) =
     a new shadowed mapping [name] -> [gamma] *)
 let shadow (name : var) (scheme : scheme) (gamma : mappings) = 
   match Mappings.find_opt name gamma with 
-  | None -> Mappings.add name [scheme] gamma
   | Some lst -> Mappings.add name (scheme::lst) gamma
+  | None -> Mappings.add name [scheme] gamma
 
 (** [shadow_all lst gamma] is the set of mappings [gamma], with 
     new shadowed mappings corresponding to each var -> scheme mapping 
@@ -58,8 +58,8 @@ let shadow_all (lst : (var * scheme) list) (gamma : mappings) : mappings =
     most recently-shadowed mapping for [name] removed *)
 let unshadow (name : var) (gamma : mappings) : mappings = 
   match Mappings.find_opt name gamma with 
-  | Some (h::rest) -> Mappings.add name rest gamma
-  | _ -> gamma
+  | Some (_::rest) when rest <> [] -> Mappings.add name rest gamma
+  | _ -> Mappings.remove name gamma
 
 let lookup_typ (name : var) (gamma : mappings) : scheme option = 
   match Mappings.find_opt name gamma with
@@ -260,7 +260,7 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
           let sub'' =
             unify [ (sub_typ (compose sub sub') prev_typ, TFun (new_typ, fresh)) ]
           in
-          (sub_typ (compose sub (compose sub' sub'')) fresh, compose sub (compose sub' sub''))
+          (sub_typ (compose (compose sub' sub'') sub) fresh, compose (compose sub' sub'') sub)
         in
         List.fold_left f (fn_typ, s0) lst)
   | Skip -> (t_unit, empty_substitution)
@@ -344,7 +344,6 @@ let rec check_statement (gamma : mappings) (statement : stmt) :
     let unified_type =
       if is_mut then TMutable unified_type else unified_type
     in
-    Format.printf "%s : %s \n" (v) ((typ_var_diff unified_type gamma', unified_type) |> str_of_scheme);
     ( update v (typ_var_diff unified_type gamma', unified_type) gamma'',
       compose s0 s1 )
   | Pass -> (gamma, empty_substitution)
@@ -406,7 +405,7 @@ let rec check_statement (gamma : mappings) (statement : stmt) :
     let slast = unify [ (fn_typ, sub_typ s0 fn_name_type) ] in
     let new_fn_typ = sub_typ (compose s0 slast) fn_typ in
     let new_gamma =
-      sub_gamma slast
+      sub_gamma (compose s0 slast)
       @@ update fn_id
         (typ_var_diff new_fn_typ (sub_gamma s0 gamma), new_fn_typ)
         gamma'
