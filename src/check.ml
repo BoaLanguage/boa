@@ -48,10 +48,28 @@ let shadow (name : var) (scheme : scheme) (gamma : mappings) =
   | None -> Mappings.add name [scheme] gamma
   | Some lst -> Mappings.add name (scheme::lst) gamma
 
+(** [shadow_all lst gamma] is the set of mappings [gamma], with 
+    new shadowed mappings corresponding to each var -> scheme mapping 
+    present in [lst] *)
+let shadow_all (lst : (var * scheme) list) (gamma : mappings) : mappings = 
+  List.fold_left (fun gamma' (name, scheme) -> shadow name scheme gamma') gamma lst
+
+(** [unshadow name gamma] is the set of mappings [gamma], with the 
+    most recently-shadowed mapping for [name] removed *)
+let unshadow (name : var) (gamma : mappings) : mappings = 
+  match Mappings.find_opt name gamma with 
+  | Some (h::rest) -> Mappings.add name rest gamma
+  | _ -> gamma
+
+let lookup_typ (name : var) (gamma : mappings) : scheme option = 
+  match Mappings.find_opt name gamma with
+  | Some (h::_) -> Some h
+  | _ -> None
+
 (** [assoc_opt_or_raise k lst] is the value corresponding to k in lst,
-    unless k is not bound, in which case an error is raised *)
-let assoc_opt_or_raise k lst =
-  match List.assoc_opt k lst with
+              unless k is not bound, in which case an error is raised *)
+let assoc_opt_or_raise (k : var) (lst : mappings) : scheme =
+  match lookup_typ k lst with
   | None -> raise @@ IllTyped ("Unbound: " ^ k)
   | Some v -> v
 
@@ -66,11 +84,6 @@ let unzip l = (List.map fst l, List.map snd l)
 let map_tuple (f : 'a list -> 'b list) l =
   let l1, l2 = unzip l in
   zp (f l1) (f l2)
-
-let lookup_typ (name : var) (gamma : mappings) : scheme option = 
-  match Mappings.find_opt name gamma with
-  | Some (h::_) -> Some h
-  | _ -> None
 
 let any (f : 'a -> bool) : 'a list -> bool =
   List.fold_left (fun acc b -> acc || f b) false
@@ -98,11 +111,16 @@ let rec sub_typ (sigma : substitution) (typ : typ) : typ =
 let substitute (sigma : substitution) (lst : typ list) : typ list =
   List.map (sub_typ sigma) lst
 
+(** [sub_scheme sigma schm] substitutes type variables in sigma into
+    the types in [schm]. NOTE : [sub_scheme] assumes that there are no
+    mappings in [sigma] for any quantified type variables in [schm] *)
+let sub_scheme (sigma : substitution) (schm : scheme) : scheme = 
+  fst schm, sub_typ sigma (snd schm)
+
 (** [sub_gamma s gamma] is gamma, with all occurrences of type variables
     that have type assignments in s, replaced with those type assignments. *)
 let sub_gamma (sigma : substitution) (gamma : mappings) : mappings =
-  let sub_scheme schm : scheme = fst schm, sub_typ sigma (snd schm) in 
-  let sub_scheme_list = List.map sub_scheme in 
+  let sub_scheme_list = List.map (sub_scheme sigma) in 
   Mappings.map sub_scheme_list gamma
 
 (** [i ==> typ] checks if type variable i is in typ*)
@@ -178,10 +196,10 @@ let rec unify (constraints : constraints) : substitution =
         | other, TMutable t -> unify @@ ((other, t) :: rest)
         | TVar i, _ when not (i ==> t') ->
           let sigma' = Substitution.singleton i t' in
-          compose sigma' @@ unify @@ sub_constraints sigma'
+          compose (unify @@ sub_constraints sigma') sigma'
         | _, TVar i when not (i ==> t) ->
           let sigma' = Substitution.singleton i t in
-          compose sigma' @@ unify @@ sub_constraints sigma'
+          compose (unify @@ sub_constraints sigma') sigma'
         | TFun (t1, t2), TFun (t1', t2') ->
           unify @@ ((t1, t1') :: (t2, t2') :: rest)
         | TList t, TList t' -> unify @@ ((t, t') :: rest)
@@ -240,38 +258,39 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
           let new_typ, sub' = check_expr new_gamma arg in
           let fresh = fresh_tvar () in
           let sub'' =
-            unify [ (sub_typ (sub' @ sub) prev_typ, TFun (new_typ, fresh)) ]
+            unify [ (sub_typ (compose sub sub') prev_typ, TFun (new_typ, fresh)) ]
           in
-          (sub_typ (sub'' @ sub' @ sub) fresh, sub'' @ sub' @ sub)
+          (sub_typ (compose sub (compose sub' sub'')) fresh, compose sub (compose sub' sub''))
         in
-        List.fold_left f (fn_typ, s0) lst )
+        List.fold_left f (fn_typ, s0) lst)
   | Skip -> (t_unit, empty_substitution)
   | SliceAccess (_, _) -> failwith "Unimplemented slice"
   | Binary (binop, e0, e1) -> (
       let t0, s0 = check_expr gamma e0 in
       let gamma' = sub_gamma s0 gamma in
       let t1, s1 = check_expr gamma' e1 in
+      let s1s0 = compose s1 s0 in
       match binop with
       | Plus | Minus | Times | Divide | IntDivide | Mod | Exponent ->
-        (t_int, unify [ (t0, t_int); (t1, t_int) ] @ s1 @ s0)
+        (t_int, compose s1s0 (unify [ (t0, t_int); (t1, t_int) ]))
       | Less | Greater | Geq | Leq ->
-        (t_bool, unify [ (t0, t_int); (t1, t_int) ] @ s1 @ s0)
-      | And | Or -> (t_bool, unify [ (t0, t_bool); (t1, t_bool) ] @ s1 @ s0)
-      | Equal | Neq | Is -> (t_bool, unify [ (t0, t1) ] @ s1 @ s0)
+        (t_bool, compose s1s0 (unify [ (t0, t_int); (t1, t_int) ]))
+      | And | Or -> (t_bool, compose s1s0 (unify [ (t0, t_bool); (t1, t_bool) ]))
+      | Equal | Neq | Is -> (t_bool, compose s1s0 (unify [ (t0, t1) ]))
       | In -> failwith "unimplemented In" )
   | Unary (unop, e) -> (
       let e_type, substitution = check_expr gamma e in
       match unop with
-      | Not -> (t_bool, unify [ (e_type, t_bool) ] @ substitution )
-      | Neg -> (t_int, unify [ (e_type, t_int) ] @ substitution ) )
+      | Not -> (t_bool, compose substitution @@ unify [ (e_type, t_bool) ] )
+      | Neg -> (t_int, compose substitution @@ unify [ (e_type, t_int) ] ) )
   | Tuple elist ->
-    let acc (tlist, substituition) exp =
+    let acc (tlist, substitution) exp =
       let typ, substitution' =
-        check_expr (sub_gamma substituition gamma) exp
+        check_expr (sub_gamma substitution gamma) exp
       in
-      (typ :: tlist, substitution' @ substituition)
+      (typ :: tlist, compose substitution substitution')
     in
-    let typ, substitution' = List.fold_left acc ([], []) elist in
+    let typ, substitution' = List.fold_left acc ([], empty_substitution) elist in
     (TTuple (List.rev typ), substitution')
   | List (h :: t) ->
     let t0, s0 = check_expr gamma h in
@@ -279,8 +298,8 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
     let rest_typ, s2 = check_expr gamma' (List t) in
     let list_type = TList t0 in
     let s3 = unify [ (list_type, rest_typ) ] in
-    (sub_typ s3 list_type, s3 @ s2 @ s0)
-  | List [] -> (TList (fresh_tvar ()), [])
+    (sub_typ s3 list_type, compose s0 @@ compose s2 s3)
+  | List [] -> (TList (fresh_tvar ()), empty_substitution)
   | Dict ((e0, e1) :: rest) ->
     let t0, s0 = check_expr gamma e0 in
     let gamma' = sub_gamma s0 gamma in
@@ -289,8 +308,8 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
     let rest_typ, s2 = check_expr gamma'' (Dict rest) in
     let dict_typ = TDict (t0, t1) in
     let s3 = unify [ (dict_typ, rest_typ) ] in
-    (sub_typ s3 dict_typ, s3 @ s2 @ s1 @ s0)
-  | Dict [] -> (TDict (fresh_tvar (), fresh_tvar ()), [])
+    (sub_typ s3 dict_typ, compose s0 (compose s1 (compose s2 s3)))
+  | Dict [] -> (TDict (fresh_tvar (), fresh_tvar ()), empty_substitution)
   | _ -> failwith ""
 
 (** [check_statement gamma statement] is a (mappings * substitution) pair of
@@ -301,13 +320,13 @@ let rec check_statement (gamma : mappings) (statement : stmt) :
   match statement with
   | Exp e ->
     let _ = check_expr gamma e in
-    (gamma, [])
+    (gamma, empty_substitution)
   | Decl (t_opt, v) ->
     let t = t_opt |?? fresh_tvar () in
-    ((v, ([], TLimbo t)) :: gamma, [])
+    shadow v ([], TLimbo t) gamma, empty_substitution
   | MutableDecl (t_opt, v) ->
     let t = t_opt |?? fresh_tvar () in
-    ((v, ([], TMutable t)) :: gamma, [])
+    shadow v ([], TMutable t) gamma, empty_substitution
   | Assign (v, e) ->
     let sch, is_mut =
       match assoc_opt_or_raise v gamma with
@@ -325,29 +344,29 @@ let rec check_statement (gamma : mappings) (statement : stmt) :
     let unified_type =
       if is_mut then TMutable unified_type else unified_type
     in
-
+    Format.printf "%s : %s \n" (v) ((typ_var_diff unified_type gamma', unified_type) |> str_of_scheme);
     ( update v (typ_var_diff unified_type gamma', unified_type) gamma'',
-      s1 @ s0 )
-  | Pass -> (gamma, [])
+      compose s0 s1 )
+  | Pass -> (gamma, empty_substitution)
   | Block stmt_lst ->
     let f (old_gamma, sub) stmt =
       let new_gamma, sub' = check_statement old_gamma stmt in
-      (new_gamma, sub' @ sub)
+      (new_gamma, compose sub sub')
     in
-    List.fold_left f (gamma, []) stmt_lst
+    List.fold_left f (gamma, empty_substitution) stmt_lst
   | If (e0, st1, st2) ->
     let t0, s0 = check_expr gamma e0 in
     let gamma' = sub_gamma s0 gamma in
     let gamma'' =
       match t0 with
-      | TVar i -> sub_gamma [ (i, t_bool) ] gamma'
+      | TVar i -> sub_gamma (Substitution.singleton i t_bool) gamma'
       | TBase _ when t0 = t_bool -> gamma'
       | _ -> raise @@ IllTyped "If guard must be boolean"
     in
     let _, s1 = check_statement gamma'' st1 in
     let gamma''' = sub_gamma s1 gamma'' in
     let _, s2 = check_statement gamma''' st2 in
-    (sub_gamma s2 gamma', s2 @ s1 @ s0)
+    (sub_gamma s2 gamma', compose s0 (compose s1 s2))
   | Def (rt_opt, fn_id, args, block) ->
     let args' = (rt_opt, "return") :: args in
     let mapper (typ_opt, var) : var * scheme =
@@ -360,17 +379,16 @@ let rec check_statement (gamma : mappings) (statement : stmt) :
       (ret, (schm, TMutable t)) :: List.tl arg_typs
     in
     let fn_name_type = fresh_tvar () in
-    let body_gamma = ((fn_id, ([], fn_name_type)) :: arg_typs) @ gamma in
+    let body_gamma = shadow_all ((fn_id, ([], fn_name_type)) :: arg_typs) gamma  in
     let _, s0 = check_statement body_gamma block in
     let gamma' =
       sub_gamma s0
-      @@ ((fn_id, ([], fn_name_type)) :: List.hd arg_typs :: gamma)
+      @@ shadow_all [(fn_id, ([], fn_name_type)); List.hd arg_typs] gamma
     in
-    let args = sub_gamma s0 arg_typs in
     let mapper' (_, (tvar_list, typ)) =
-      if tvar_list = [] then typ else raise @@ IllTyped "Quantifiers"
+      if tvar_list = [] then sub_typ s0 typ else raise @@ IllTyped "Quantifiers"
     in
-    let arg_types = List.map mapper' args in
+    let arg_types = List.map mapper' arg_typs in
     let arg_typ_list = List.tl arg_types in
     let return_type = List.hd arg_types in
     let return_type =
@@ -386,14 +404,14 @@ let rec check_statement (gamma : mappings) (statement : stmt) :
     in
     let fn_typ = make_fn_def arg_typ_list in
     let slast = unify [ (fn_typ, sub_typ s0 fn_name_type) ] in
-    let new_fn_typ = sub_typ (slast @ s0) fn_typ in
+    let new_fn_typ = sub_typ (compose s0 slast) fn_typ in
     let new_gamma =
       sub_gamma slast
       @@ update fn_id
         (typ_var_diff new_fn_typ (sub_gamma s0 gamma), new_fn_typ)
         gamma'
     in
-    (List.remove_assoc "return" new_gamma, slast @ s0)
+    (unshadow "return" new_gamma, compose s0 slast)
   | Print e ->
     let _, s0 = check_expr gamma e in
     (sub_gamma s0 gamma, s0)
@@ -405,14 +423,16 @@ let rec check_statement (gamma : mappings) (statement : stmt) :
 (** [check stmt] is the mappings from identifiers to schemes
     after typechecking the program. *)
 let check (statement : stmt) : mappings =
-  let gamma, sub = check_statement [] statement in
+  let gamma, sub = check_statement empty_gamma statement in
   let gamma' = sub_gamma sub gamma in
   let gamma'' =
-    List.map
-      (fun (v, sch) ->
+    Mappings.map
+      (fun (schm_lst) ->
          num_tvars_used := -1;
-         let reset_typ = init_scheme sch in
-         (v, (free_type_variables reset_typ [] |> TypeVarSet.elements, reset_typ)))
+         let reset_typ = match schm_lst with 
+           | h::_ -> init_scheme h
+           | _ -> TBase ("YIKES TYPE") in
+         ([(free_type_variables reset_typ [] |> TypeVarSet.elements, reset_typ)]))
       gamma'
   in
   gamma''
