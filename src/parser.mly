@@ -16,12 +16,13 @@
 %token MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
 %token STAR STARSTAR IF ELSE ELIF AND OR NOT PRINT EOL
 
-%nonassoc STARSTAR NEQ LPAREN LESS LEQ LBRACK IS INTDIV IN GREATER GEQ EQUALSEQUALS
+%nonassoc STARSTAR IS IN EQUALSEQUALS LIST ARROW
+%nonassoc LPAREN LBRACK
 %left PLUS MINUS OR
 %left STAR AND
-%left DIV MOD
-%nonassoc NOT
-%nonassoc DOT
+%left DIV MOD INTDIV
+%nonassoc NOT NEQ GEQ LEQ GREATER LESS
+%right DOT
 
 %type <Ast.stmt> prog
 
@@ -112,7 +113,8 @@ expr:
     | NOT expr                          { Unary(Not, $2) }
     | MINUS expr                        { Unary(Neg, $2) }
     | BOOL                              { Bool($1) }
-    | LAMBDA thint ARROW expr           { Lam(snd $2, Some(fst $2), $4) }
+    | LAMBDA LPAREN thint RPAREN 
+      ARROW expr                        { Lam(snd $3, Some(fst $3), $6) }
     | LAMBDA VAR ARROW expr             { Lam($2, None, $4) }
     | lst                               { $1 }
     | dict                              { $1 }
