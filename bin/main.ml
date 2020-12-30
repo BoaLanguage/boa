@@ -69,7 +69,7 @@ let () =
     (* print_tokens token_wrapper lexbuf;
        Format.printf "\n---END_LEX--"; *)
     try Parser.prog token_wrapper lexbuf
-    with Parsing.Parse_error ->
+    with _ ->
       let pos = lexbuf.Lexing.lex_curr_p in
       Format.printf "Syntax error at %d:%d\n"
         pos.Lexing.pos_lnum (pos.Lexing.pos_cnum - pos.Lexing.pos_bol);

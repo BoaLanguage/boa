@@ -1,15 +1,26 @@
 %{
   open Ast
+
+  let add_elif_to_if if_stmt elif = 
+  match if_stmt with 
+  | If (c, b, _) -> Format.printf "nice!"; If (c, b, elif)
+  | _ -> failwith "Attempted to add elif to non-if statement"
 %}
 
 %token <string> VAR STRING
-%token <int> INT
+%token <int> INT NEWLINE
 %token <bool> BOOL
 %token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA FOR LBRACE RBRACE
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
 %token EOF LESS GREATER LEQ GEQ NEQ CLASS WHILE MEMBER LIST
 %token MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
 %token STAR STARSTAR IF ELSE ELIF AND OR NOT PRINT EOL
+
+%nonassoc STARSTAR NEQ LPAREN LESS LEQ LBRACK IS INTDIV IN GREATER GEQ EQUALSEQUALS DOT
+%left PLUS MINUS OR
+%left STAR AND
+%left DIV MOD
+%nonassoc NOT
 
 %type <Ast.stmt> prog
 
@@ -66,24 +77,28 @@ simple_stmt:
     | VARKEYWORD VAR                    { MutableDecl(None, $2) }
     
 compound_stmt:
-    | iff                                { $1 }
+    | ifstmt                             { $1 }
     | DEF VAR paramlist ARROW 
       typ COLON EOL iblock               { Def(Some($5), $2, $3, $8) }
-    | DEF VAR paramlist COLON EOL iblock { Def(None, $2, $3, $6) }
-    | WHILE expr COLON EOL iblock        { While($2, $5) }
-    | FOR VAR IN expr COLON EOL iblock   { For($2, $4, $7) }
-    | CLASS VAR COLON EOL iblock         { Class($2, Skip, $5) }
+    | DEF VAR paramlist COLON EOL iblock     { Def(None, $2, $3, $6) }
+    | WHILE expr COLON EOL iblock            { While($2, $5) }
+    | FOR VAR IN expr COLON EOL iblock       { For($2, $4, $7) }
+    | CLASS VAR COLON EOL iblock             { Class($2, Skip, $5) }
     | CLASS VAR 
       LPAREN expr RPAREN 
-      COLON EOL iblock                   { Class($2, $4, $8) }
+      COLON EOL iblock                      { Class($2, $4, $8) }
+
+ifstmt:
+    | iff                               { $1 }
+    | ifelif                            { $1 }
 
 iff:
-    | IF expr COLON EOL 
-      iblock                    { If ($2, $5, Exp(Skip)) }
-    | IF expr COLON EOL             
-      iblock EOL
-      ELSE COLON EOL
-      iblock                    { If ($2, $5, $10) }
+    | IF expr COLON
+      iblock                            { If ($2, $4, Exp(Skip)) }
+
+ifelif:
+    | iff ELIF expr COLON 
+      iblock                            { add_elif_to_if $1 (If($3, $5, Exp(Skip))) }
 
 expr:
     | LPAREN expr RPAREN                { $2 }

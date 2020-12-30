@@ -30,7 +30,6 @@ rule token = parse
 | "("              { LPAREN }
 | ")"              { RPAREN }
 | "."              { DOT }
-| ";"              { SEMICOLON }
 | ":"              { COLON }
 | "->"             { ARROW }
 | "lambda"         { LAMBDA }
