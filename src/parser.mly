@@ -16,11 +16,12 @@
 %token MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
 %token STAR STARSTAR IF ELSE ELIF AND OR NOT PRINT EOL
 
-%nonassoc STARSTAR NEQ LPAREN LESS LEQ LBRACK IS INTDIV IN GREATER GEQ EQUALSEQUALS DOT
+%nonassoc STARSTAR NEQ LPAREN LESS LEQ LBRACK IS INTDIV IN GREATER GEQ EQUALSEQUALS
 %left PLUS MINUS OR
 %left STAR AND
 %left DIV MOD
 %nonassoc NOT
+%nonassoc DOT
 
 %type <Ast.stmt> prog
 
@@ -90,15 +91,15 @@ compound_stmt:
 
 ifstmt:
     | iff                               { $1 }
-    | ifelif                            { $1 }
+    /* | ifelif                            { $1 } */
 
 iff:
     | IF expr COLON
       iblock                            { If ($2, $4, Exp(Skip)) }
 
-ifelif:
+/* ifelif:
     | iff ELIF expr COLON 
-      iblock                            { add_elif_to_if $1 (If($3, $5, Exp(Skip))) }
+      iblock                            { add_elif_to_if $1 (If($3, $5, Exp(Skip))) } */
 
 expr:
     | LPAREN expr RPAREN                { $2 }
