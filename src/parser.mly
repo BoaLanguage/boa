@@ -143,6 +143,7 @@ bexp:
 lst:
     | LBRACK RBRACK                     { List([]) }
     | LBRACK exprlist RBRACK            { List($2) }
+    | LBRACK single_expr_list RBRACK    { List($2) }
 
 thint:
     | VAR COLON typ                     { ($3, $1) }
@@ -168,6 +169,7 @@ typ:
 arglist:
     | LPAREN RPAREN                     { [] }
     | LPAREN exprlist RPAREN            { $2 }
+    | LPAREN single_expr_list RPAREN    { $2 }
 
 paramlist:
     | LPAREN RPAREN                     { [] }
@@ -191,9 +193,12 @@ kvp:
     | expr COLON expr                   { ($1, $3) }
 
 exprlist:
-    | expr                              { [$1] }
     | exprlist COMMA expr               { $1@[$3] }
+    | single_expr_list COMMA expr       { $1@[$3] }
+
+single_expr_list:
+    | expr                              { [$1] }
 
 tuple:
-    | LPAREN exprlist RPAREN            { Tuple($2) }
-    | LPAREN exprlist COMMA RPAREN      { Tuple($2) }
+    | LPAREN exprlist RPAREN                    { Tuple($2) }
+    | LPAREN single_expr_list COMMA RPAREN      { Tuple($2) }
