@@ -10,6 +10,9 @@ let get_indent_level nlseq =
    let inds = List.nth lst (List.length lst - 1) in 
   String.length inds
  
+let elif = "elif"
+let eelse = "else"
+
 }
  
 let digit = ['0'-'9']
@@ -21,6 +24,8 @@ let nl = ['\n'] ( ( ['\t'] | [' '] )* ['\n'] )* ( ['\t'] | [' '] )*
 
 let bs = [' ']
 let comment = ['#'] [^'\n']* (['\n'] | eof)
+let elif = "elif"
+let eelse = "else"
 
 rule token = parse
 | ws               { token lexbuf }
@@ -28,8 +33,8 @@ rule token = parse
 | "let"            { LET }
 | "var"            { VARKEYWORD }
 | nl as s          { NEWLINE(get_indent_level s) }
-| nl "elif" as s   { EOLIF(get_indent_level s - 4) }
-| nl "else" as s   { EOLSE(get_indent_level s - 4) }
+| nl elif as s     { EOLIF(get_indent_level s - (String.length elif)) }
+| nl eelse as s    { EOLSE(get_indent_level s - (String.length eelse)) }
 | "("              { LPAREN }
 | ")"              { RPAREN }
 | "."              { DOT }
