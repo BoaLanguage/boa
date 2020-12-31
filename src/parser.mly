@@ -1,14 +1,14 @@
 %{
   open Ast
 
-  let add_block_to_if if_stmt elif = 
+  let rec add_block_to_if if_stmt elif = 
   match if_stmt with 
-  | If (c, b, _) -> Format.printf "nice!"; If (c, b, elif)
-  | _ -> failwith "Attempted to add elif to non-if statement"
+  | If (c, b, _else) -> If (c, b, add_block_to_if _else elif)
+  | _ -> elif
 %}
 
 %token <string> VAR STRING
-%token <int> INT NEWLINE
+%token <int> INT NEWLINE EOLIF EOLSE
 %token <bool> BOOL
 %token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA FOR LBRACE RBRACE
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
@@ -93,7 +93,6 @@ compound_stmt:
 
 ifstmt:
     | iff                               { $1 }
-    | iff EOL                           { $1 }
     | ifelif                            { $1 }
     | ifelse                            { $1 }
 
@@ -102,11 +101,14 @@ iff:
       iblock                            { If ($2, $5, Exp(Skip)) }
 
 ifelif:
-    | iff EOL ELIF expr COLON EOL
-      iblock                            { add_block_to_if $1 (If($4, $7, Exp(Skip))) }
+    | iff ELIF expr COLON EOL
+      iblock                            { add_block_to_if $1 (If($3, $6, Exp(Skip))) }
+    | ifelif ELIF expr COLON EOL
+      iblock                            { add_block_to_if $1 (If($3, $6, Exp(Skip))) }
 
 ifelse:
-    | iff EOL ELSE COLON EOL iblock         { add_block_to_if $1 $6 }
+    | iff ELSE COLON EOL iblock         { add_block_to_if $1 $5 }
+    | ifelif ELSE COLON EOL iblock      { add_block_to_if $1 $5 }
 
 expr:
     | LPAREN expr RPAREN                { $2 }

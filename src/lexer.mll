@@ -18,6 +18,7 @@ let ws = [' ']
 let str = ['"'] ([^'"'] | ['\\'] ['"'])* ['"']
 let small_str = ['\''] ([^'"'] | ['\\'] ['\''])* ['\'']
 let nl = ['\n'] ( ( ['\t'] | [' '] )* ['\n'] )* ( ['\t'] | [' '] )*
+
 let bs = [' ']
 let comment = ['#'] [^'\n']* (['\n'] | eof)
 
@@ -27,6 +28,8 @@ rule token = parse
 | "let"            { LET }
 | "var"            { VARKEYWORD }
 | nl as s          { NEWLINE(get_indent_level s) }
+| nl "elif" as s   { EOLIF(get_indent_level s - 4) }
+| nl "else" as s   { EOLSE(get_indent_level s - 4) }
 | "("              { LPAREN }
 | ")"              { RPAREN }
 | "."              { DOT }
@@ -59,8 +62,6 @@ rule token = parse
 | "True"           { BOOL(true) }
 | "False"          { BOOL(false) }
 | "if"             { IF }
-| "else"           { ELSE }
-| "elif"           { ELIF }
 | "and"            { AND }
 | "or"             { OR }
 | "not"            { NOT }

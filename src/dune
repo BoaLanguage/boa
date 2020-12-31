@@ -3,7 +3,7 @@
 )
 (menhir 
     (modules parser)
-    (flags --explain)
+    (flags --explain --unused-token EOLSE --unused-token EOLIF --unused-token NEWLINE)
 )
 (library
  (name boa)

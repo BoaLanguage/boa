@@ -15,7 +15,24 @@ let indent_level = ref 0
 let dedent_stack : int list ref = ref [0]
 let temp_tokens : token list ref = ref []
 let token_wrapper lexbuf = 
-  let rec find_dedents (dedent_stack_copy: int list) 
+  let rec insert_token_after_dedents i tok = 
+    begin
+      let level = !indent_level in
+      if i > level then 
+        (indent_level := i;
+         dedent_stack := i::!dedent_stack;
+         temp_tokens := [INDENT];
+         tok)
+      else if i = level then 
+        tok
+      else 
+        let new_dedent_stack, dedent_list = find_dedents !dedent_stack i [tok] in 
+        indent_level := i;
+        dedent_stack := new_dedent_stack;
+        temp_tokens := dedent_list;
+        EOL
+    end 
+  and find_dedents (dedent_stack_copy: int list) 
       (level: int) (acc: token list): int list * token list = 
     match dedent_stack_copy with 
     | [] -> raise IllegalIndentationError
@@ -29,22 +46,11 @@ let token_wrapper lexbuf =
     let token = Lexer.token lexbuf in 
     match token with 
     | NEWLINE (i) -> 
-      begin
-        let level = !indent_level in
-        if i > level then 
-          (indent_level := i;
-           dedent_stack := i::!dedent_stack;
-           temp_tokens := [INDENT];
-           EOL)
-        else if i = level then 
-          EOL
-        else 
-          let new_dedent_stack, dedent_list = find_dedents !dedent_stack i [EOL] in 
-          indent_level := i;
-          dedent_stack := new_dedent_stack;
-          temp_tokens := dedent_list;
-          EOL
-      end
+      insert_token_after_dedents i EOL
+    | EOLIF(i) -> 
+      insert_token_after_dedents i ELIF
+    | EOLSE(i) ->
+      insert_token_after_dedents i ELSE
     | EOF -> let _, dedent_list = find_dedents !dedent_stack 0 [EOL] in 
       indent_level := -1;
       dedent_stack := [];
@@ -66,8 +72,9 @@ let () =
   let file = open_in (!filename) in
   let lexbuf = Lexing.from_channel file in
   let e =
-    (* print_tokens token_wrapper lexbuf;
-       Format.printf "\n---END_LEX--"; *)
+    (* print_tokens Lexer.token lexbuf; *)
+    (* print_tokens token_wrapper lexbuf; *)
+    (* Format.printf "\n---END_LEX--"; *)
     try Parser.prog token_wrapper lexbuf
     with _ ->
       let pos = lexbuf.Lexing.lex_curr_p in
