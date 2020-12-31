@@ -93,6 +93,7 @@ compound_stmt:
 
 ifstmt:
     | iff                               { $1 }
+    | iff EOL                           { $1 }
     | ifelif                            { $1 }
     | ifelse                            { $1 }
 
