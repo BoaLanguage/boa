@@ -1,6 +1,10 @@
 type var = string
 type tvar = int
 
+module Object = Map.Make(String)
+module Mappings = Map.Make(String)
+module Substitution = Map.Make(Int)
+
 type typ =
   | TFun of typ * typ
   | TBase of string
@@ -10,15 +14,12 @@ type typ =
   | TVar of tvar
   | TMutable of typ
   | TLimbo of typ
-  | TObj of {attrs: (var * typ) list; mattrs: (var * typ) list}
+  | TObj of object_dict
 
-type scheme = tvar list * typ
-
-module Mappings = Map.Make(String)
-module Substitution = Map.Make(Int)
-
-type mappings = (scheme list) Mappings.t
-type substitution = typ Substitution.t
+and scheme = tvar list * typ
+and mappings = (scheme list) Mappings.t
+and substitution = typ Substitution.t
+and object_dict = typ Object.t
 
 type binop =
   | Plus

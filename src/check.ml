@@ -1,5 +1,6 @@
 open Ast
 open Pprint
+open Set
 
 exception IllTyped of string
 
@@ -96,6 +97,7 @@ let ( |?? ) (opt : 'a option) (default : 'a) : 'a =
     domain of s replaced with the appropriate mapping *)
 let rec sub_typ (sigma : substitution) (typ : typ) : typ =
   let sub = sub_typ sigma in
+  let map_struct = List.map (fun (v, t) -> (v, sub t)) in
   match typ with
   | TVar i -> Substitution.find_opt i sigma |?? typ
   | TBase _ as typ -> typ
@@ -105,6 +107,7 @@ let rec sub_typ (sigma : substitution) (typ : typ) : typ =
   | TDict (t1, t2) -> TDict (sub t1, sub t2)
   | TLimbo t -> TLimbo (sub t)
   | TMutable t -> TMutable (sub t)
+  | TObj lst -> TObj (map_struct lst)
   | _ -> failwith "Unimplemented (substitute)"
 
 (** [substitute sigma lst] substitutes type variables in sigma into types in lst*)
@@ -134,6 +137,7 @@ let rec ( ==> ) (i : tvar) (typ : typ) : bool =
   | TDict (t1, t2) -> i ==> t1 || i ==> t2
   | TMutable t -> i ==> t
   | TLimbo t -> i ==> t
+  | TObj lst -> List.exists (fun (_, t) -> i ==> t) lst
   | _ -> failwith "Unimplemented ==>"
 
 (** [free_type_variables t bound] is the set of type variables in t not in bound *)
@@ -158,6 +162,10 @@ let rec free_type_variables (t : typ) (bound : tvar list) : TypeVarSet.t =
       (free_type_variables t2 bound)
   | TLimbo t -> free_type_variables t bound
   | TMutable t -> free_type_variables t bound
+  | TObj lst -> 
+    List.fold_left 
+      (fun acc (_, t) -> TypeVarSet.union (free_type_variables t bound) acc) 
+      TypeVarSet.empty lst
   | _ -> failwith "Unimplemented"
 
 (** [typ_var_diff t1 gamma] is a list of integers representing the set of 
@@ -205,6 +213,18 @@ let rec unify (constraints : constraints) : substitution =
         | TList t, TList t' -> unify @@ ((t, t') :: rest)
         | TDict (t1, t2), TDict (t1', t2') ->
           unify @@ ((t1, t1') :: (t2, t2') :: rest)
+        | TObj lst1, TObj lst2 -> 
+          let common = Object.union (fun n t1 t2) lst1 lst2 in
+          []
+        (* let longer, shorter = 
+           if List.length lst1 < List.length lst2 then lst2, lst1 else lst1, lst2 in 
+           let common_constraints = 
+           List.filter_map (fun (n1, t1) -> 
+              match List.find_opt (fun (n2, _) -> n2 = n1) longer with 
+              | Some (_, t2) -> Some (t1, t2)
+              | None -> None) shorter
+           in 
+           unify @@ common_constraints @ rest *)
         | _ ->
           constraints |> str_of_constr |> Format.printf "Constraints: %s \n";
           raise
@@ -222,9 +242,9 @@ let rec init_scheme (scheme : scheme) : typ =
       TFun (replace old_tvar fresh t1, replace old_tvar fresh t2)
     | TTuple tlist -> TTuple (List.map (replace old_tvar fresh) tlist)
     | TList t -> TList (replace old_tvar fresh t)
+    | TObj lst -> TObj(Object.map (replace old_tvar fresh) lst)
     | _ -> tau
   in
-
   match scheme with
   | [], t -> t
   | tv :: rest, t -> init_scheme (rest, replace tv (fresh_tvar ()) t)
@@ -310,6 +330,11 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
     let s3 = unify [ (dict_typ, rest_typ) ] in
     (sub_typ s3 dict_typ, compose s0 (compose s1 (compose s2 s3)))
   | Dict [] -> (TDict (fresh_tvar (), fresh_tvar ()), empty_substitution)
+  | AttrAccess (e, v) -> 
+    let typ, sub = check_expr gamma e in 
+    let fresh = fresh_tvar () in
+    let member_mapping = Object.singleton v fresh in 
+    fresh, compose sub (unify [(typ, TObj(member_mapping))])
   | _ -> failwith ""
 
 (** [check_statement gamma statement] is a (mappings * substitution) pair of
@@ -417,6 +442,11 @@ let rec check_statement (gamma : mappings) (statement : stmt) :
   | Return e ->
     let g, s = check_statement gamma (Assign ("return", e)) in
     (sub_gamma s g, s)
+  | AttrAssgn (exp, member, value) -> 
+    let _, s0 = check_expr gamma (AttrAccess(exp, member)) in 
+    let _, s1 = check_expr (sub_gamma s0 gamma) value in 
+    (sub_gamma s1 gamma), s1
+
   | _ -> failwith "Unimplemented statement"
 
 (** [check stmt] is the mappings from identifiers to schemes
