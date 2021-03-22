@@ -97,7 +97,6 @@ let ( |?? ) (opt : 'a option) (default : 'a) : 'a =
     domain of s replaced with the appropriate mapping *)
 let rec sub_typ (sigma : substitution) (typ : typ) : typ =
   let sub = sub_typ sigma in
-  let map_struct = List.map (fun (v, t) -> (v, sub t)) in
   match typ with
   | TVar i -> Substitution.find_opt i sigma |?? typ
   | TBase _ as typ -> typ
@@ -107,7 +106,7 @@ let rec sub_typ (sigma : substitution) (typ : typ) : typ =
   | TDict (t1, t2) -> TDict (sub t1, sub t2)
   | TLimbo t -> TLimbo (sub t)
   | TMutable t -> TMutable (sub t)
-  | TObj lst -> TObj (map_struct lst)
+  | TObj map -> TObj (Object.map (fun t -> sub t) map)
   | _ -> failwith "Unimplemented (substitute)"
 
 (** [substitute sigma lst] substitutes type variables in sigma into types in lst*)
@@ -137,7 +136,7 @@ let rec ( ==> ) (i : tvar) (typ : typ) : bool =
   | TDict (t1, t2) -> i ==> t1 || i ==> t2
   | TMutable t -> i ==> t
   | TLimbo t -> i ==> t
-  | TObj lst -> List.exists (fun (_, t) -> i ==> t) lst
+  | TObj map -> Object.exists (fun _ t -> i ==> t) map
   | _ -> failwith "Unimplemented ==>"
 
 (** [free_type_variables t bound] is the set of type variables in t not in bound *)
@@ -162,10 +161,10 @@ let rec free_type_variables (t : typ) (bound : tvar list) : TypeVarSet.t =
       (free_type_variables t2 bound)
   | TLimbo t -> free_type_variables t bound
   | TMutable t -> free_type_variables t bound
-  | TObj lst -> 
-    List.fold_left 
-      (fun acc (_, t) -> TypeVarSet.union (free_type_variables t bound) acc) 
-      TypeVarSet.empty lst
+  | TObj map -> 
+    Object.fold 
+      (fun _ t acc -> TypeVarSet.union (free_type_variables t bound) acc) 
+      map TypeVarSet.empty
   | _ -> failwith "Unimplemented"
 
 (** [typ_var_diff t1 gamma] is a list of integers representing the set of 
@@ -214,8 +213,8 @@ let rec unify (constraints : constraints) : substitution =
         | TDict (t1, t2), TDict (t1', t2') ->
           unify @@ ((t1, t1') :: (t2, t2') :: rest)
         | TObj lst1, TObj lst2 -> 
-          let common = Object.union (fun n t1 t2) lst1 lst2 in
-          []
+          (* let common = Object.union (fun n t1 t2 -> ) lst1 lst2 in *)
+          unify rest
         (* let longer, shorter = 
            if List.length lst1 < List.length lst2 then lst2, lst1 else lst1, lst2 in 
            let common_constraints = 

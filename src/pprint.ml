@@ -100,7 +100,7 @@ let rec str_of_typ t =
   | TDict (t1, t2) -> "Dict : " ^ (str_of_typ t1 ^ " : " ^ str_of_typ t2)
   | TLimbo t -> "LIMBO: " ^ str_of_typ t
   | TMutable t -> "MUTABLE: " ^ str_of_typ t
-  | TObj lst -> "OBJ: " ^ List.fold_left (fun acc (v, t) -> acc ^ ", " ^ v ^ " : " ^ str_of_typ t) "" lst
+  | TObj lst -> "OBJ: " ^ Object.fold (fun v t acc -> acc ^ ", " ^ v ^ " : " ^ str_of_typ t) lst ""
   | _ -> failwith "Unimplemented (str_of_typ)"
 
 let str_of_int_list lst : string = 
