@@ -1,10 +1,9 @@
 open Ast
 (* Pretty printing helper functions *)
-
 let print_ident x =
   Format.printf "%s" x
 
-let print_empty p pt t e =
+let print_empty _ pt t _ =
   Format.printf "@[<2>(empty :@ " ;
   pt t;
   Format.printf ")@]"
@@ -82,10 +81,10 @@ let string_of_unop o =
 
 let insert_delimiter_between_list (delim : string) (mapper : 'a -> string) (lst: 'a list): string  = 
   let mapped = List.map mapper lst in
-    match mapped with
-    | [] -> ""
-    | h::[] -> h 
-    | h::t -> List.fold_left (fun acc n -> acc ^ delim ^ n) h t 
+  match mapped with
+  | [] -> ""
+  | h::[] -> h 
+  | h::t -> List.fold_left (fun acc n -> acc ^ delim ^ n) h t 
 
 let rec str_of_typ t =
   match t with
@@ -93,34 +92,38 @@ let rec str_of_typ t =
   | TFun (t1, t2) ->
     "(" ^ (str_of_typ t1) ^ " -> " ^ (str_of_typ t2) ^ ")"
   | TTuple lst ->
-      "TUPLE: " ^
-      insert_delimiter_between_list " * " (fun t -> (str_of_typ t)) lst
+    "TUPLE: " ^
+    insert_delimiter_between_list " * " (fun t -> (str_of_typ t)) lst
   | TList tl ->
-    (str_of_typ tl) ^ " list"
+    (str_of_typ tl) ^ " list " 
   | TVar v -> "'" ^ (String.make 1 (Char.chr (v + 97)))
   | TDict (t1, t2) -> "Dict : " ^ (str_of_typ t1 ^ " : " ^ str_of_typ t2)
   | TLimbo t -> "LIMBO: " ^ str_of_typ t
   | TMutable t -> "MUTABLE: " ^ str_of_typ t
+  | TObj lst -> "OBJ: " ^ Object.fold (fun v t acc -> acc ^ ", " ^ v ^ " : " ^ str_of_typ t) lst ""
   | _ -> failwith "Unimplemented (str_of_typ)"
 
 let str_of_int_list lst : string = 
   insert_delimiter_between_list ", " (fun i -> String.make 1 @@ Char.chr @@ (i) + 97) lst
 
 let str_of_scheme sch = 
-  let ilist, t = sch in 
-  (* "Forall " ^ str_of_int_list ilist ^ " : " ^ *)
+  let lst, t = sch in 
+  (* "Forall " ^ str_of_int_list lst ^ " : " ^ *)
   (str_of_typ t)
 
-let str_of_gamma : Ast.mappings -> string = 
-  insert_delimiter_between_list "\n" (fun (v, sch) -> v ^ " => " ^ str_of_scheme sch)
+let str_of_gamma (gamma : Ast.mappings) : string = 
+  let gamma_seq = Mappings.to_seq gamma in 
+  let gamma_lst = Seq.fold_left (fun acc (v, lst) -> acc@[(v, List.hd lst)]) [] gamma_seq in
+  insert_delimiter_between_list "\n" (fun (v, sch) -> v ^ " => " ^ str_of_scheme sch) gamma_lst
 
 let str_of_constr = 
   List.fold_left 
-  (fun acc (t1, t2) -> acc ^ ", " ^ (str_of_typ t1) ^ " == " ^ (str_of_typ t2)) ""
+    (fun acc (t1, t2) -> acc ^ ", " ^ (str_of_typ t1) ^ " == " ^ (str_of_typ t2)) ""
 
-let str_of_sub = 
-  List.fold_left 
-  (fun acc (t1, t2) -> acc ^ ", " ^ ((String.make 1 (Char.chr (t1 + 97)))) ^ " => " ^ (str_of_typ t2)) ""
+let str_of_sub s = 
+  Ast.Substitution.fold 
+    (fun key typ acc -> acc ^ ", " ^ (str_of_typ (TVar key)) ^ " -~-> " ^ (str_of_typ typ)) s ""
+(* (fun _ (t1, t2) acc  -> acc ^ ", " ^ ((String.make 1 (Char.chr (t1 + 97)))) ^ " => " ^ (str_of_typ t2)) "" *)
 
 let rec print_expr e = 
   match e with 
@@ -135,7 +138,7 @@ let rec print_expr e =
     print_list lst;
     Format.printf ")";
   | Skip -> Format.printf "None"
-  | Lam (v, t_opt, e) -> 
+  | Lam (v, _, e) -> 
     Format.printf "lambda %s -> " v; print_expr e;
   | _ -> Format.printf "Unimplemented Expression print"
 
@@ -144,76 +147,76 @@ and print_list lst =
   | [] -> Format.printf ""
   | e::[] -> print_expr e
   | e::r -> 
-  print_expr e; Format.printf ", "; print_list r
+    print_expr e; Format.printf ", "; print_list r
 
 let rec print_stmt s =
   match s with
   | Exp e -> print_expr e
   | Block (s::rest) -> 
-  Format.printf "{";
-  print_stmt s; 
-  Format.printf ";\n";
-  print_lst rest;
-  Format.printf "}\n"
+    Format.printf "{";
+    print_stmt s; 
+    Format.printf ";\n";
+    print_lst rest;
+    Format.printf "}\n"
   | Decl (t, v) -> 
-  Format.printf "%s : " v;
-  (match t with 
-  | Some t -> Format.printf "%s" (str_of_typ t)
-  | None -> ())
+    Format.printf "%s : " v;
+    (match t with 
+     | Some t -> Format.printf "%s" (str_of_typ t)
+     | None -> ())
   | AttrAssgn (ex, n, va) -> 
-  print_expr (AttrAccess(ex, n));
-  Format.printf " = "; print_expr va
+    print_expr (AttrAccess(ex, n));
+    Format.printf " = "; print_expr va
   | Assign (v, e) ->
-  Format.printf "%s := " v;
-  print_expr e
+    Format.printf "%s := " v;
+    print_expr e
   | SliceAssgn (e1, e2, e3) ->
-  print_expr e1;
-  Format.printf "[";
-  print_expr e2;
-  Format.printf "] := ";
-  print_expr e3
+    print_expr e1;
+    Format.printf "[";
+    print_expr e2;
+    Format.printf "] := ";
+    print_expr e3
   | Return (e1) -> Format.printf "return: ";
-  print_expr e1
+    print_expr e1
   | Print (e1) -> Format.printf "print: ";
-  print_expr e1
+    print_expr e1
   | Pass -> Format.printf ": pass :";
   | If (e1, s1, s2) -> 
-  Format.printf "If ("; print_expr e1; Format.printf ")\n";
-  print_stmt s1;
-  Format.printf "Else: \n";
-  print_stmt s2;
-  | Def (t1, fn, args, b) -> 
-  Format.printf "Function %s -> " fn;
-  (match t1 with 
-  | Some t -> Format.printf "%s" (str_of_typ t);
-  | None -> Format.printf "None");
-  Format.printf "\n";
-  print_stmt b;
+    Format.printf "If ("; print_expr e1; Format.printf ")\n";
+    print_stmt s1;
+    Format.printf "Else: \n";
+    print_stmt s2;
+  | Def (t1, fn, _, b) -> 
+    Format.printf "Function %s -> " fn;
+    (match t1 with 
+     | Some t -> Format.printf "%s" (str_of_typ t);
+     | None -> Format.printf "None");
+    Format.printf "\n";
+    print_stmt b;
   | Break -> Format.printf ": break :"
   | Continue -> Format.printf ": continue :"
   | Block [] -> Format.printf "[]"
   | While (e, b) -> 
-  Format.printf "While "; print_expr e; Format.printf "\n";
-  print_stmt b
+    Format.printf "While "; print_expr e; Format.printf "\n";
+    print_stmt b
   | For (v, e, b) ->
-  Format.printf "For %s in " v;
-  print_expr e;
-  Format.printf "\n";
-  print_stmt b
+    Format.printf "For %s in " v;
+    print_expr e;
+    Format.printf "\n";
+    print_stmt b
   | Class (v, e, b) -> 
-  Format.printf "Class %s (subclass of " v;
-  print_expr e;
-  Format.printf ")\n";
-  print_stmt b
-  | MutableDecl (t, v) -> 
-  Format.printf "Mutable decl: %s" v;
+    Format.printf "Class %s (subclass of " v;
+    print_expr e;
+    Format.printf ")\n";
+    print_stmt b
+  | MutableDecl (_, v) -> 
+    Format.printf "Mutable decl: %s" v;
   | _ -> Format.printf "DECLS"
 
 and print_lst lst = 
-match lst with 
-| [] -> Format.printf ""
-| s::[] -> print_stmt s
-| s::rest -> print_stmt s; Format.printf ";\n"; print_lst rest
+  match lst with 
+  | [] -> Format.printf ""
+  | s::[] -> print_stmt s
+  | s::rest -> print_stmt s; Format.printf ";\n"; print_lst rest
 
 (* Pretty print expression e *)
 
@@ -222,46 +225,46 @@ let rec print_value (v : value) =
   | VInt i -> Format.printf "%d" i;
   | VRef vr -> Format.printf "mutable ("; 
     (match !vr with 
-    | Some v -> print_value (v); Format.printf ")";
-    | None -> Format.printf "None)";)
+     | Some v -> print_value (v); Format.printf ")";
+     | None -> Format.printf "None)";)
   | VString s -> Format.printf "%s" s;
   | VBool b -> Format.printf "%b" b;
-  | VClosure (v, body, env) -> Format.printf "%s" "Some closure";
+  | VClosure (_) -> Format.printf "%s" "Some closure";
   | VDict d -> 
     (match d with 
-    | [] -> Format.printf "{}"
-    | (v1, v2)::rest -> 
-    Format.printf "(";
-    print_value v1; 
-    Format.printf ": ";
-    print_value v2;
-    Format.printf "), ";
-    print_value (VDict(rest)))
+     | [] -> Format.printf "{}"
+     | (v1, v2)::rest -> 
+       Format.printf "(";
+       print_value v1; 
+       Format.printf ": ";
+       print_value v2;
+       Format.printf "), ";
+       print_value (VDict(rest)))
   | VList l -> 
     (match l with
-    | [] -> Format.printf ""
-    | v::rest -> 
-    print_value v;
-    Format.printf ", ";
-    print_value (VList(rest)))
+     | [] -> Format.printf ""
+     | v::rest -> 
+       print_value v;
+       Format.printf ", ";
+       print_value (VList(rest)))
   | VObj l -> 
-      Format.printf "{\n";
-      let rec loop l = 
+    Format.printf "{\n";
+    let rec loop l = 
       match l with 
       | [] -> ()
       | (v, va)::rest -> 
-      Format.printf "\t%s <- " v;
-      print_value va;
-      Format.printf "\n";
-      loop rest in 
-      loop l; Format.printf "\n}\n";
+        Format.printf "\t%s <- " v;
+        print_value va;
+        Format.printf "\n";
+        loop rest in 
+    loop l; Format.printf "\n}\n";
   | VNone -> Format.printf "None";
-  | VPreObj (a) -> Format.printf "Preobj";
+  | VPreObj (_) -> Format.printf "Preobj";
   | VMethodCall (obj, m) -> 
-      print_value obj;
-      Format.printf ".";
-      print_value m;
+    print_value obj;
+    Format.printf ".";
+    print_value m;
   | _ -> failwith "Not Printable"
 
-let rec print_env (s : env) =
+let print_env (s : env) =
   List.iter (fun (var, v) -> Format.printf "\n%s: " var; print_value v) s; ()

@@ -1,0 +1,6 @@
+(executable
+ (name main)
+ (flags (:standard -w -66))
+ (libraries boa)
+ (public_name boa)
+ )

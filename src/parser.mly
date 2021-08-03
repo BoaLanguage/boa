@@ -1,33 +1,29 @@
 %{
   open Ast
-  open Printf
-  open Lexing
-  open Stack
- 
-  type bb = 
-  | End
-  | Pair of stmt * bb
 
-  let tuple_type ts =
-  match ts with
-  | [t] -> t
-  | _ -> TTuple ts
-
-  let tuple_expr es =
-  match es with
-  | [e] -> e
-  | _ -> Tuple es
+  let rec add_block_to_if if_stmt elif = 
+  match if_stmt with 
+  | If (c, b, _else) -> If (c, b, add_block_to_if _else elif)
+  | _ -> elif
 %}
 
-%token <string> VAR TNAME STRING
-%token <int> NEWLINE
-%token <int> INT
+%token <string> VAR STRING
+%token <int> INT NEWLINE EOLIF EOLSE
 %token <bool> BOOL
 %token LPAREN RPAREN LBRACK RBRACK DOT COLON COMMA FOR LBRACE RBRACE
 %token ARROW LAMBDA EQUALS EQUALSEQUALS DEF IS IN PLUS MINUS
 %token EOF LESS GREATER LEQ GEQ NEQ CLASS WHILE MEMBER LIST
-%token COMMA MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
-%token STAR STARSTAR IF ELSE ELIF AND OR NOT MOD SEMICOLON PRINT NOP EOL
+%token MOD INTDIV DIV RETURN INDENT DEDENT LET VARKEYWORD
+%token STAR STARSTAR IF ELSE ELIF AND OR NOT PRINT EOL
+
+%right ARROW
+%nonassoc STARSTAR IS IN EQUALSEQUALS LIST
+%nonassoc LPAREN LBRACK
+%left PLUS MINUS OR
+%left STAR AND
+%left DIV MOD INTDIV
+%nonassoc NOT NEQ GEQ LEQ GREATER LESS
+%right DOT
 
 %type <Ast.stmt> prog
 
@@ -35,184 +31,234 @@
 
 %%
 prog: 
-    | stmtlist EOF                     { Block($1) }
-    /* | stmt 
-      ind_tuple EOF                     { block_structure (($1, 0)::$2) 0 } */
+    | block = stmtlist EOF                      { Block(block) }
 
 iblock:
-    | INDENT block DEDENT               { $2 }
+    | INDENT block = block DEDENT               { block }
 
 block:
-    | stmtlist                          { Block($1) }
-
-nll:
-    | EOL                           { [] }   
-    | nll EOL                       { [] }                         
-
-/* indented_block:
-    | indented_stmtlist                 { Block($1) }
-
-indented_stmtlist:
-    | INDENT stmt                       { [$2] }
-    | indented_stmtlist 
-      EOL INDENT stmt               { $1@[$4] } */
+    | block = stmtlist                          { Block(block) }
 
 stmtlist: 
-    | stmt_newline                      { [$1] }
-    | stmtlist stmt_newline             { $1@[$2] }
+    | statement = stmt_newline                  { [statement] }
+    | block = stmtlist 
+      statement = stmt_newline                  { block@[statement] }
 
 stmt_newline:
-    | simple_stmt EOL                  { $1 }
-    | compound_stmt                    { $1 }
-    | EOL                              { Pass }
+    | statement = simple_stmt EOL               { statement }
+    | statement = compound_stmt                 { statement }
+    | EOL                                       { Pass }
 
 simple_stmt:
-   |  expr                              { Exp($1) }
-   /* |  thint                             { Decl(fst $1, snd $1) } */
-   |  expr DOT VAR EQUALS expr          { AttrAssgn($1, $3, $5) }
-   |  LET thint EQUALS expr             { Block([
-                                        Decl(Some (fst $2), snd $2);
-                                        Assign(snd $2, $4)
-                                        ]) }
-    | VARKEYWORD thint EQUALS expr      { Block([
-                                        MutableDecl(Some (fst $2), snd $2);
-                                        Assign(snd $2, $4)
-                                        ]) }                                      
-    | VAR EQUALS expr                   { Assign($1, $3) }
-    | expr LBRACK expr RBRACK 
-      EQUALS expr                       { SliceAssgn($1, $3, $6) }
-    | RETURN expr                       { Return ($2) }
-    | PRINT expr                        { Print ($2) }
-    | MEMBER VARKEYWORD VAR COLON typ   { MutableMemDecl($5, $3) }
-    | MEMBER LET VAR COLON typ          { MemDecl($5, $3) }
-    | LET VAR EQUALS expr               { Block([
-                                        Decl(None, $2);
-                                        Assign($2, $4)
-                                        ]) }
-    | VARKEYWORD VAR EQUALS expr        { Block([
-                                        MutableDecl(None, $2);
-                                        Assign($2, $4)
-                                        ]) }
-    | LET thint                         { Decl(Some(fst $2), snd $2) }
-    | LET VAR                           { Decl(None, $2) }
-    | VARKEYWORD thint                  { MutableDecl(Some(fst $2), snd $2) }
-    | VARKEYWORD VAR                    { MutableDecl(None, $2) }
+   |  expression = expr                         { Exp(expression) }
+   |  expression = expr 
+      DOT name = VAR 
+      EQUALS value = expr                       { AttrAssgn(expression, name, value) }
+   |  LET hint = thint EQUALS value = expr      { Block([
+                                                  Decl(Some (snd hint), fst hint);
+                                                  Assign(fst hint, value)
+                                                ]) }
+    | VARKEYWORD hint = thint 
+      EQUALS value = expr                       { Block([
+                                                  MutableDecl(Some (snd hint), fst hint);
+                                                  Assign(fst hint, value)
+                                                ]) }                                      
+    | name = VAR EQUALS value = expr            { Assign(name, value) }
+    | expression = expr LBRACK 
+      accessor = expr RBRACK 
+      EQUALS value = expr                       { SliceAssgn(expression, accessor, value) }
+    | RETURN value = expr                       { Return (value) }
+    | PRINT value = expr                        { Print (value) }
+    | MEMBER VARKEYWORD 
+      name = VAR COLON 
+      typ = typ                                 { MutableMemDecl(typ, name) }
+    | MEMBER LET 
+      name = VAR COLON 
+      typ = typ                                 { MemDecl(typ, name) }
+    | LET 
+      name = VAR EQUALS 
+      value = expr                              { Block([
+                                                  Decl(None, name);
+                                                  Assign(name, value)
+                                                ]) }
+    | VARKEYWORD 
+      name = VAR EQUALS 
+      value = expr                              { Block([
+                                                  MutableDecl(None, name);
+                                                  Assign(name, value)
+                                                ]) }
+    | LET hint = thint                          { Decl(Some(snd hint), fst hint) }
+    | LET name = VAR                            { Decl(None, name) }
+    | VARKEYWORD hint = thint                   { MutableDecl(Some(snd hint), fst hint) }
+    | VARKEYWORD name = VAR                     { MutableDecl(None, name) }
     
 compound_stmt:
-    | iff                                { $1 }
-    | DEF VAR paramlist ARROW 
-      typ COLON EOL iblock               { Def(Some($5), $2, $3, $8) }
-    | DEF VAR paramlist COLON EOL iblock { Def(None, $2, $3, $6) }
-    | WHILE expr COLON EOL iblock        { While($2, $5) }
-    | FOR VAR IN expr COLON EOL iblock   { For($2, $4, $7) }
-    | CLASS VAR COLON EOL iblock         { Class($2, Skip, $5) }
-    | CLASS VAR 
-      LPAREN expr RPAREN 
-      COLON EOL iblock                   { Class($2, $4, $8) }
+    | ifstmt = ifstmt                           { ifstmt }
+    | DEF 
+      fn_name = VAR 
+      params = paramlist ARROW 
+      return_type = typ COLON EOL 
+      body = iblock                             { Def(Some(return_type), fn_name, params, body) }
+    | DEF 
+      fn_name = VAR 
+      params = paramlist COLON EOL 
+      body = iblock                             { Def(None, fn_name, params, body) }
+    | WHILE 
+      guard = expr COLON EOL 
+      body = iblock                             { While(guard, body) }
+    | FOR 
+      identifier = VAR IN 
+      iterable = expr COLON EOL 
+      body = iblock                             { For(identifier, iterable, body) }
+    | CLASS 
+      name = VAR COLON EOL 
+      body = iblock                             { Class(name, Skip, body) }
+    | CLASS 
+      name = VAR 
+      LPAREN super = expr RPAREN 
+      COLON EOL 
+      body = iblock                             { Class(name, super, body) }
+
+ifstmt:
+    | if_stmt = iff                             { if_stmt }
+    | if_elif = ifelif                          { if_elif }
+    | if_else = ifelse                          { if_else }
 
 iff:
-    | IF expr COLON EOL 
-      iblock                    { If ($2, $5, Exp(Skip)) }
-    | IF expr COLON EOL             
-      iblock EOL
-      ELSE COLON EOL
-      iblock                    { If ($2, $5, $10) }
-/* 
-elifchain:
-    | ELIF expr EOL block           { If($2, $4, Exp(Skip)) }
-    | elifchain ELIF expr EOL block { If() } */
+    | IF 
+      guard = expr 
+      COLON EOL
+      body = iblock                             { If (guard, body, Exp(Skip)) }
+
+ifelif:
+    | if_stmt = iff ELIF 
+      elif_guard = expr COLON EOL
+      elif_body = iblock                        { add_block_to_if if_stmt (If(elif_guard, elif_body, Exp(Skip))) }
+    | elif_chain = ifelif ELIF 
+      elif_guard = expr COLON EOL
+      elif_body = iblock                        { add_block_to_if elif_chain (If(elif_guard, elif_body, Exp(Skip))) }
+
+ifelse:
+    | if_stmt = iff ELSE COLON EOL 
+      else_body = iblock                        { add_block_to_if if_stmt else_body }
+    | elif_chain = ifelif ELSE COLON EOL 
+      else_body = iblock                        { add_block_to_if elif_chain else_body }
 
 expr:
-    | LPAREN expr RPAREN                { $2 }
-    | VAR                               { Var($1) }
-    | expr arglist                      { Call($1, $2) }
-    | tuple                             { $1 }
-    | INT                               { Int($1) }
-    | expr LBRACK expr RBRACK           { SliceAccess($1, $3) }
-    | expr DOT VAR                      { AttrAccess($1, $3) }
-    | NOT expr                          { Unary(Not, $2) }
-    | MINUS expr                        { Unary(Neg, $2) }
-    | BOOL                              { Bool($1) }
-    | LAMBDA thint ARROW expr           { Lam(snd $2, Some(fst $2), $4) }
-    | LAMBDA VAR ARROW expr             { Lam($2, None, $4) }
-    | tuple                             { $1 }
-    | lst                               { $1 }
-    | dict                              { $1 }
-    | bexp                              { $1 }
-    | STRING                            { String($1) }
+    | LPAREN exp = expr RPAREN                  { exp }
+    | name = VAR                                { Var(name) }
+    | expression = expr 
+      arguments = arglist                       { Call(expression, arguments) }
+    | tuple = tuple                             { tuple }
+    | literal = INT                             { Int(literal) }
+    | expression = expr 
+      LBRACK accessor = expr RBRACK             { SliceAccess(expression, accessor) }
+    | expression = expr DOT 
+      name = VAR                                { AttrAccess(expression, name) }
+    | NOT expression = expr                     { Unary(Not, expression) }
+    | MINUS expression = expr                   { Unary(Neg, expression) }
+    | t_f = BOOL                                { Bool(t_f) }
+    | LAMBDA 
+      LPAREN arg_hint = thint RPAREN 
+      ARROW body = expr                         { Lam(fst arg_hint, Some(snd arg_hint), body) }
+    | LAMBDA 
+      arg_name = VAR ARROW 
+      body = expr                               { Lam(arg_name, None, body) }
+    | lst = lst                                 { lst }
+    | dict = dict                               { dict }
+    | bexp = bexp                               { bexp }
+    | str = STRING                              { String(str) }
 
 bexp:
-    | expr PLUS expr                      { Binary(Plus, $1, $3) }
-    | expr LESS expr                      { Binary(Less, $1, $3) }
-    | expr GREATER expr                   { Binary(Greater, $1, $3) }
-    | expr AND expr                       { Binary(And, $1, $3) }
-    | expr OR expr                        { Binary(Or, $1, $3) }
-    | expr EQUALSEQUALS expr              { Binary(Equal, $1, $3) }
-    | expr STAR expr                      { Binary(Times, $1, $3) }
-    | expr MINUS expr                     { Binary(Minus, $1, $3) }
-    | expr DIV expr                       { Binary(Divide, $1, $3) }
-    | expr MOD expr                       { Binary(Mod, $1, $3) }
-    | expr STARSTAR expr                  { Binary(Exponent, $1, $3) }
-    | expr INTDIV expr                    { Binary(IntDivide, $1, $3) }
-    | expr LEQ expr                       { Binary(Leq, $1, $3) }
-    | expr GEQ expr                       { Binary(Geq, $1, $3) }
-    | expr IS expr                        { Binary(Is, $1, $3) }
-    | expr IN expr                        { Binary(In, $1, $3) }
-    | expr NEQ expr                       { Binary(Neq, $1, $3) }
+    | left = expr PLUS right = expr             { Binary(Plus, left, right) }
+    | left = expr LESS right = expr             { Binary(Less, left, right) }
+    | left = expr GREATER right = expr          { Binary(Greater, left, right) }
+    | left = expr AND right = expr              { Binary(And, left, right) }
+    | left = expr OR right = expr               { Binary(Or, left, right) }
+    | left = expr EQUALSEQUALS right = expr     { Binary(Equal, left, right) }
+    | left = expr STAR right = expr             { Binary(Times, left, right) }
+    | left = expr MINUS right = expr            { Binary(Minus, left, right) }
+    | left = expr DIV right = expr              { Binary(Divide, left, right) }
+    | left = expr MOD right = expr              { Binary(Mod, left, right) }
+    | left = expr STARSTAR right = expr         { Binary(Exponent, left, right) }
+    | left = expr INTDIV right = expr           { Binary(IntDivide, left, right) }
+    | left = expr LEQ right = expr              { Binary(Leq, left, right) }
+    | left = expr GEQ right = expr              { Binary(Geq, left, right) }
+    | left = expr IS right = expr               { Binary(Is, left, right) }
+    | left = expr IN right = expr               { Binary(In, left, right) }
+    | left = expr NEQ right = expr              { Binary(Neq, left, right) }
 
 lst:
-    | LBRACK RBRACK                     { List([]) }
-    | LBRACK exprlist RBRACK            { List($2) }
+    | LBRACK RBRACK                             { List([]) }
+    | LBRACK exprs = exprlist RBRACK            { List(exprs) }
+    | LBRACK 
+      expr = single_expr_list 
+      RBRACK                                    { List(expr) }
 
 thint:
-    | VAR COLON typ                     { ($3, $1) }
-    | LPAREN thint RPAREN               { $2 }
+    | name = VAR COLON typ = typ                { (name, typ) }
+    | LPAREN hint = thint RPAREN                { hint }
 
 thintopt:
-    | VAR COLON typ                     { (Some($3), $1) }
-    | LPAREN thintopt RPAREN            { $2 }
+    | name = VAR COLON typ = typ                { (Some(typ), name) }
+    | LPAREN hint = thintopt RPAREN             { hint }
 
 typ:
-    | VAR                               { TBase($1) }
-    | typ ARROW typ                     { TFun($1, $3) }
-    | typlist                           { TTuple($1) }
-    | typ LIST                          { TList($1) }
-    | LPAREN typ RPAREN                 { $2 }
-
-typlist:
-    | typ                               { [$1] }
-    | typlist STAR typ                  { $1@[$3] }
+    | name = VAR                                { TBase(name) }
+    | arg = typ ARROW return = typ              { TFun(arg, return) }
+    | left = typ STAR right = typ               { 
+                                                  match left, right with 
+                                                  | TTuple l1, TTuple l2 -> TTuple(l1 @ l2)
+                                                  | TTuple l1, t2 -> TTuple(l1@[t2])
+                                                  | t1, TTuple(l2) -> TTuple(t1::l2)
+                                                  | t1, t2 -> TTuple([t1; t2])
+                                                }
+    | typ = typ LIST                            { TList(typ) }
+    | LPAREN typ = typ RPAREN                   { typ }
 
 arglist:
-    | LPAREN RPAREN                     { [] }
-    | LPAREN exprlist RPAREN            { $2 }
+    | LPAREN RPAREN                             { [] }
+    | LPAREN lst = exprlist RPAREN              { lst }
+    | LPAREN 
+      lst = single_expr_list 
+      RPAREN                                    { lst }
 
 paramlist:
-    | LPAREN RPAREN                     { [] }
-    | LPAREN thintoptlist RPAREN        { $2 }
+    | LPAREN RPAREN                             { [] }
+    | LPAREN lst = thintoptlist RPAREN          { lst }
 
 thintoptlist:
-    | thintopt                          { [$1] }
-    | VAR                               { [(None, $1)] }
-    | thintoptlist COMMA thintopt       { $1@[$3] }
-    | thintoptlist COMMA VAR            { $1@[(None, $3)] }
+    | hint_opt = thintopt                       { [hint_opt] }
+    | name = VAR                                { [(None, name)] }
+    | lst = thintoptlist COMMA 
+      hint_opt = thintopt                       { lst@[hint_opt] }
+    | lst = thintoptlist COMMA 
+      name = VAR                                { lst@[(None, name)] }
 
 dict:
-    | LBRACE RBRACE                     { Dict([]) }
-    | LBRACE kvplist RBRACE             { Dict($2) }
+    | LBRACE RBRACE                             { Dict([]) }
+    | LBRACE kvps = kvplist RBRACE              { Dict(kvps) }
 
 kvplist:
-    | kvp                               { [$1] }
-    | kvplist COMMA kvp                 { $1@[$3] }
+    | kvp = kvp                                 { [kvp] }
+    | lst = kvplist COMMA 
+      kvp = kvp                                 { lst@[kvp] }
 
 kvp:
-    | expr COLON expr                   { ($1, $3) }
+    | key = expr COLON 
+      value = expr                              { (key, value) }
 
 exprlist:
-    | expr                              { [$1] }
-    | exprlist COMMA expr               { $1@[$3] }
+    | lst = exprlist COMMA 
+      expression = expr                         { lst@[expression] }
+    | lst = single_expr_list COMMA 
+      expression = expr                         { lst@[expression] }
+
+single_expr_list:
+    | expression = expr                         { [expression] }
 
 tuple:
-    | LPAREN exprlist RPAREN            { Tuple($2) }
-    | LPAREN exprlist COMMA RPAREN      { Tuple($2) }
-    /* | LPAREN expr COMMA RPAREN          { Tuple([$2]) } */
+    | LPAREN lst = exprlist RPAREN              { Tuple(lst) }
+    | LPAREN 
+      lst = single_expr_list 
+      COMMA RPAREN                              { Tuple(lst) }

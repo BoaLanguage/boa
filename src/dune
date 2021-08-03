@@ -1,0 +1,11 @@
+(ocamllex 
+    (modules lexer)
+)
+(menhir 
+    (modules parser)
+    (flags --explain --unused-token EOLSE --unused-token EOLIF --unused-token NEWLINE)
+)
+(library
+ (name boa)
+ (libraries llvm)
+)
