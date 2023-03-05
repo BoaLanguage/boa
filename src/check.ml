@@ -104,7 +104,7 @@ let rec sub_typ (sigma : substitution) (typ : typ) : typ =
   | TList t -> TList (sub t)
   | TTuple lst -> TTuple (List.map sub lst)
   | TDict (t1, t2) -> TDict (sub t1, sub t2)
-  | TLimbo t -> TLimbo (sub t)
+  | TUninitialized t -> TUninitialized (sub t)
   | TMutable t -> TMutable (sub t)
   | TObj map -> TObj (Object.map (fun t -> sub t) map)
   | _ -> failwith "Unimplemented (substitute)"
@@ -135,7 +135,7 @@ let rec ( ==> ) (i : tvar) (typ : typ) : bool =
   | TList tau' -> i ==> tau'
   | TDict (t1, t2) -> i ==> t1 || i ==> t2
   | TMutable t -> i ==> t
-  | TLimbo t -> i ==> t
+  | TUninitialized t -> i ==> t
   | TObj map -> Object.exists (fun _ t -> i ==> t) map
   | _ -> failwith "Unimplemented ==>"
 
@@ -159,7 +159,7 @@ let rec free_type_variables (t : typ) (bound : tvar list) : TypeVarSet.t =
     TypeVarSet.union
       (free_type_variables t1 bound)
       (free_type_variables t2 bound)
-  | TLimbo t -> free_type_variables t bound
+  | TUninitialized t -> free_type_variables t bound
   | TMutable t -> free_type_variables t bound
   | TObj map -> 
     Object.fold 
@@ -197,8 +197,8 @@ let rec unify (constraints : constraints) : substitution =
       else
         let sub_constraints subst = map_tuple (substitute subst) rest in
         match (t, t') with
-        | TLimbo t, other -> unify @@ ((t, other) :: rest)
-        | other, TLimbo t -> unify @@ ((other, t) :: rest)
+        | TUninitialized t, other -> unify @@ ((t, other) :: rest)
+        | other, TUninitialized t -> unify @@ ((other, t) :: rest)
         | TMutable t, other -> unify @@ ((t, other) :: rest)
         | other, TMutable t -> unify @@ ((other, t) :: rest)
         | TVar i, _ when not (i ==> t') ->
@@ -258,7 +258,7 @@ let rec check_expr (gamma : mappings) (e : exp) : typ * substitution =
   | Var v -> (
       match lookup_typ v gamma with
       | None -> raise @@ IllTyped ("Unbound variable " ^ v)
-      | Some (_, TLimbo _) -> raise @@ IllTyped ("Uninitialized variable " ^ v)
+      | Some (_, TUninitialized _) -> raise @@ IllTyped ("Uninitialized variable " ^ v)
       | Some scheme -> init_scheme scheme, empty_substitution )
   | Lam (v, t_opt, exp) ->
     let arg_typ = match t_opt with None -> fresh_tvar () | Some t -> t in
@@ -347,14 +347,14 @@ let rec check_statement (gamma : mappings) (statement : stmt) :
     (gamma, empty_substitution)
   | Decl (t_opt, v) ->
     let t = t_opt |?? fresh_tvar () in
-    shadow v ([], TLimbo t) gamma, empty_substitution
+    shadow v ([], TUninitialized t) gamma, empty_substitution
   | MutableDecl (t_opt, v) ->
     let t = t_opt |?? fresh_tvar () in
     shadow v ([], TMutable t) gamma, empty_substitution
   | Assign (v, e) ->
     let sch, is_mut =
       match assoc_opt_or_raise v gamma with
-      | lst, TLimbo t -> ((lst, t), false)
+      | lst, TUninitialized t -> ((lst, t), false)
       | lst, TMutable t -> ((lst, t), true)
       | _ -> raise @@ IllTyped ("Illegal assignment to " ^ v)
     in

@@ -1,0 +1,13 @@
+def f():
+    if 2 > 0:
+        let y = 53
+    else:
+        let x = 2 + 5
+
+let x
+if 10 > 0:
+    x = 3
+else:
+    x = 3
+
+print(x)

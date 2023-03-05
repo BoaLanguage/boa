@@ -13,7 +13,7 @@ type typ =
   | TDict of typ * typ
   | TVar of tvar
   | TMutable of typ
-  | TLimbo of typ
+  | TUninitialized of typ
   | TObj of object_dict
 
 and scheme = tvar list * typ
